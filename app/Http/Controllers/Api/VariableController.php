@@ -8,6 +8,8 @@ use App\Models\Tableau;
 use App\Models\Variable;
 use App\Services\RegleCalculService;
 use App\Services\ReglesCalculService;
+use App\Services\VariableService;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +18,12 @@ use Illuminate\Support\Facades\DB;
 class VariableController extends Controller
 {
     //
+    protected $service;
+
+    public function __construct(VariableService $service)
+    {
+        $this->service = $service;
+    }
     public function index()
 {
     $user = Auth::user();
@@ -280,4 +288,51 @@ class VariableController extends Controller
         return response()->json(['message' => 'Variable supprimée avec succès']); 
     }
 
-}
+     /**
+     * Retourne le montant d’une variable pour une période donnée
+     */
+    public function montant(Request $request, $id)
+    {
+        $request->validate([
+            'date_debut' => 'nullable|date',
+            'date_fin'   => 'nullable|date|after_or_equal:date_debut',
+        ]);
+
+        $user = Auth::user(); 
+
+        $variable = Variable::findOrFail($id);
+
+        if ($variable->user_id !== $user->id) {
+            abort(401, 'Non autorisé');
+        }  
+
+        $tableau = $variable->tableau;
+        $mois = $tableau->moisComptable;
+        
+        // Si l’utilisateur a fourni une date_debut, on la parse
+        if ($request->filled('date_debut')) {
+            $dateDebut = Carbon::parse($request->input('date_debut'));
+        } else {
+            // Eloquent cast sur date_debut renvoie déjà un Carbon
+            $dateDebut = $mois->date_debut;
+        }
+
+        // Même logique pour date_fin
+        if ($request->filled('date_fin')) {
+            $dateFin = Carbon::parse($request->input('date_fin'));
+        } else {
+            $dateFin = $mois->date_fin;
+        }              
+        // dd($dateDebut, $dateFin);  
+        
+        $montant = $this->service->calculerMontant($variable, $dateDebut, $dateFin);
+
+        return response()->json([
+            'variable_id' => $variable->id,
+            'nom'         => $variable->nom ?? null,
+            'date_debut'  => $dateDebut->toDateString(),
+            'date_fin'    => $dateFin->toDateString(), 
+            'montant'     => $montant, 
+        ]); 
+    } 
+} 

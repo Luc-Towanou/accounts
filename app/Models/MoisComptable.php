@@ -23,6 +23,12 @@ class MoisComptable extends Model
         'date_fin',
     ];
 
+    protected $casts = [
+    'date_debut' => 'date',
+    'date_fin'   => 'date',
+    ];
+
+
       // ✅ Les statuts disponibles
     public const STATUT_ACTIF = 'actif';
     public const STATUT_INACTIF = 'inactif';

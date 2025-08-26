@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Operation;
 use App\Models\SousVariable;
+use App\Models\Tableau;
 use App\Models\Variable;
 use App\Services\ReglesCalculService;
 use Illuminate\Support\Facades\Log;
@@ -32,7 +33,33 @@ class OperationObserver
     public function updated(Operation $operation): void
     {
         //
-            $this->recalculerImpact($operation);
+        // 🔹 Cas 1 : déplacement (sous_variable ou variable changée)
+    if ($operation->isDirty('sous_variable_id') || $operation->isDirty('variable_id')) {
+        // Anciennes valeurs
+        $oldSousVarId = $operation->getOriginal('sous_variable_id');
+        $oldVarId     = $operation->getOriginal('variable_id');
+
+        // Recalculer l’ancien parent (si existant)
+        if ($oldSousVarId) {
+            $oldOperation = clone $operation;
+            $oldOperation->sous_variable_id = $oldSousVarId;
+            $oldOperation->variable_id = null;
+            $this->recalculerImpact($oldOperation);
+        } elseif ($oldVarId) {
+            $oldOperation = clone $operation;
+            $oldOperation->variable_id = $oldVarId;
+            $oldOperation->sous_variable_id = null;
+            $this->recalculerImpact($oldOperation);
+        }
+
+        // Recalculer la nouvelle cible (logique déjà existante)
+        $this->recalculerImpact($operation);
+    } else {
+        // 🔹 Cas 2 : simple mise à jour (montant, description…)
+        $this->recalculerImpact($operation);
+    }
+
+        // $this->recalculerImpact($operation);
     }
 
     /**
@@ -84,6 +111,9 @@ class OperationObserver
         }
         elseif ($operation->variable_id) {
             $variable = $operation->variable;
+             if ($variable->type === 'sous-tableau'){
+                return; //une operation ne peut directement être lier à une variale de type 'sous-tableau'
+             }
 
             if (!$variable->calcule) {
                 $variable->depense_reelle = $variable->operations()->sum('montant');
@@ -94,23 +124,21 @@ class OperationObserver
         }
 
        try {
-            $idsRecalcules = $this->recalculerDependances($impactIds);
+            // 2️⃣ Récupérer les dépendances
+            $this->recalculerDependances($impactIds);
         } catch (\Throwable $e) {
             Log::error("Erreur lors du recalcul des dépendances : " . $e->getMessage());
         }
 
         // Récupérer les variables recalculées
-        $variablesParentes = Variable::whereIn('id', $idsRecalcules)->get();
+        // $variablesParentes = Variable::whereIn('id', $idsRecalcules)->get();
 
 
-        if ($variable) {
         // 3️⃣ Mise à jour du parent variable
         if ($variable && !$variable->calcule && $variable->sousVariables()->exists()) {
             $variable->depense_reelle = $variable->sousVariables()->sum('depense_reelle');
             $variable->save();
-        }
-        }
-
+        } 
 
         // 4️⃣ Mise à jour tableau et mois
         if ($variable) {
@@ -136,62 +164,148 @@ class OperationObserver
 
             $mois->save();
         }
+       
+    
     }
 
     /**
      * Recalcul des dépendances via règles
      */
     protected function recalculerDependances(array $idsSousVar)
-    {
-        $aRecalculerSousVars = [];
-        $aRecalculerVars = [];
+{
+    $aRecalculerSousVars = [];
+    $aRecalculerVars = [];
+    $aRecalculerTableaux = [];
+    $aRecalculerMois = [];
 
-        // Sous-variables calculées
-        $sousVariables = SousVariable::where('calcule', true)
-            // ->whereNotNull('regle_calcul')
-            ->whereHas(relation: 'regleCalcul')
-            ->get();
+    // 🔹 1. Sous-variables calculées
+    $sousVariables = SousVariable::where('calcule', true)
+        ->whereHas('regleCalcul')
+        ->get();
 
-        foreach ($sousVariables as $sous) {
-            // $deps = $this->regleService->getDependances($sous->regle_calcul);
-            $expression = optional($sous->regleCalcul)->expression;
-            if (!$expression) continue;
+    foreach ($sousVariables as $sous) {
+        $expression = optional($sous->regleCalcul)->expression;
+        if (!$expression) continue;
 
-            $deps = $this->regleService->getDependances($expression);
-            if (array_intersect($idsSousVar, $deps)) {
-                try {
-                    $sous->depense_reelle = $this->regleService->evaluer($sous->regle_calcul);
-                    $sous->save();
-                    $aRecalculerSousVars[] = $sous->id;
-                } catch (\Exception $e) {
-                    Log::error("Erreur règle sous-var ID {$sous->id} [{$sous->nom}] : " . $e->getMessage());
+        $deps = $this->regleService->getDependances($expression);
+        if (array_intersect($idsSousVar, $deps)) {
+            try {
+                $sous->depense_reelle = $this->regleService->evaluer($expression);
+                $sous->save();
+                $aRecalculerSousVars[] = $sous->id;
+
+                // ⚡ remonter vers la variable associée
+                if ($sous->variable) {
+                    $aRecalculerVars[] = $sous->variable->id;
                 }
+            } catch (\Exception $e) {
+                Log::error("Erreur règle sous-var ID {$sous->id} [{$sous->nom}] : " . $e->getMessage());
             }
         }
-
-        // Variables calculées
-        $variables = Variable::where('calcule', true)
-            ->whereHas('regleCalcul')
-            ->get();
-
-        foreach ($variables as $var) {
-            $expression = optional($var->regleCalcul)->expression;
-            if (!$expression) continue;
-
-            $deps = $this->regleService->getDependances($expression);
-            if (array_intersect(array_merge($idsSousVar, $aRecalculerSousVars), $deps)) {
-                try {
-                    $var->depense_reelle = $this->regleService->evaluer($expression);
-                    $var->save();
-                    // dd($var);
-                    $aRecalculerVars[] = $var->id;
-                } catch (\Exception $e) {
-                    Log::error("Erreur règle var ID {$var->id} [{$var->nom}] : " . $e->getMessage());
-                }
-            }
-        }
-        return array_merge($aRecalculerSousVars, $aRecalculerVars);
     }
+
+    // 🔹 2. Variables calculées
+    $variables = Variable::where('calcule', true)
+        ->whereHas('regleCalcul')
+        ->get();
+
+    foreach ($variables as $var) {
+        $expression = optional($var->regleCalcul)->expression;
+        if (!$expression) continue;
+
+        $deps = $this->regleService->getDependances($expression);
+        if (array_intersect(array_merge($idsSousVar, $aRecalculerSousVars), $deps)) {
+            try {
+                $var->depense_reelle = $this->regleService->evaluer($expression);
+                $var->save();
+                $aRecalculerVars[] = $var->id;
+
+                // ⚡ remonter vers le tableau associé
+                if ($var->tableau) {
+                    $aRecalculerTableaux[] = $var->tableau->id;
+                }
+            } catch (\Exception $e) {
+                Log::error("Erreur règle var ID {$var->id} [{$var->nom}] : " . $e->getMessage());
+            }
+        }
+    }
+
+    // 🔹 3. Tableaux impactés
+    $tableaux = Tableau::whereIn('id', $aRecalculerTableaux)->get();
+    foreach ($tableaux as $tableau) {
+        $tableau->depense_reelle = $tableau->variables()->sum('depense_reelle');
+        $tableau->save();
+
+        // ⚡ remonter vers le mois comptable
+        if ($tableau->moisComptable) {
+            $aRecalculerMois[] = $tableau->moisComptable->id;
+        }
+    }
+
+    // 🔹 4. Mois comptables impactés
+    $moisComptables = \App\Models\MoisComptable::whereIn('id', $aRecalculerMois)->get();
+    foreach ($moisComptables as $mois) {
+        $mois->depense_reelle = $mois->tableaux()->where('nature', 'sortie')->sum('depense_reelle');
+        $mois->gains_reelle   = $mois->tableaux()->where('nature', 'entree')->sum('depense_reelle');
+        $mois->montant_net    = $mois->gains_reelle - $mois->depense_reelle;
+        $mois->save();
+    }
+
+    return array_merge($aRecalculerSousVars, $aRecalculerVars, $aRecalculerTableaux, $aRecalculerMois);
+}
+
+    // protected function recalculerDependances(array $idsSousVar)
+    // {
+    //     $aRecalculerSousVars = [];
+    //     $aRecalculerVars = [];
+
+    //     // Sous-variables calculées
+    //     $sousVariables = SousVariable::where('calcule', true)
+    //         // ->whereNotNull('regle_calcul')
+    //         ->whereHas(relation: 'regleCalcul')
+    //         ->get();
+
+    //     foreach ($sousVariables as $sous) {
+    //         // $deps = $this->regleService->getDependances($sous->regle_calcul);
+    //         $expression = optional($sous->regleCalcul)->expression;
+    //         if (!$expression) continue;
+
+    //         $deps = $this->regleService->getDependances($expression);
+    //         if (array_intersect($idsSousVar, $deps)) {
+    //             try {
+    //                 $sous->depense_reelle = $this->regleService->evaluer($sous->regle_calcul);
+    //                 $sous->save();
+    //                 $aRecalculerSousVars[] = $sous->id;
+    //             } catch (\Exception $e) {
+    //                 Log::error("Erreur règle sous-var ID {$sous->id} [{$sous->nom}] : " . $e->getMessage());
+    //             }
+    //         }
+    //     }
+
+    //     // Variables calculées
+    //     $variables = Variable::where('calcule', true)
+    //         ->whereHas('regleCalcul')
+    //         ->get();
+
+    //     foreach ($variables as $var) {
+    //         $expression = optional($var->regleCalcul)->expression;
+    //         if (!$expression) continue;
+
+    //         $deps = $this->regleService->getDependances($expression);
+    //         if (array_intersect(array_merge($idsSousVar, $aRecalculerSousVars), $deps)) {
+    //             try {
+    //                 $var->depense_reelle = $this->regleService->evaluer($expression);
+    //                 $var->save();
+    //                 // dd($var);
+    //                 $aRecalculerVars[] = $var->id;
+    //             } catch (\Exception $e) {
+    //                 Log::error("Erreur règle var ID {$var->id} [{$var->nom}] : " . $e->getMessage());
+    //             }
+    //         }
+    //     }
+    //     return array_merge( $aRecalculerVars);
+    //             // return array_merge($aRecalculerSousVars, $aRecalculerVars);
+    // }
 
 
      // if ($tableau->nature === 'sortie') {

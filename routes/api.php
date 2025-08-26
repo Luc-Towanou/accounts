@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\api\AuthController;
 use App\Http\Controllers\Api\CategorieController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\MoisComptableController;
 use App\Http\Controllers\Api\OperationController;
+use App\Http\Controllers\Api\RecurrenceController;
 use App\Http\Controllers\Api\RegleCalculController;
 use App\Http\Controllers\Api\SousTableauController;
 use App\Http\Controllers\Api\SousVariableController;
@@ -43,20 +45,27 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('sous-variables', SousVariableController::class);
     Route::apiResource('operations', OperationController::class);
     Route::apiResource('regles-calcul', RegleCalculController::class);
+    Route::apiResource('recurrences', RecurrenceController::class);
 
     // operations
     Route::get('operations/variable/{variableId}', [OperationController::class, 'index']);
     Route::put('/operations/{operationId}', [OperationController::class, 'update']);
     Route::delete('operations/{operationId}', [OperationController::class, 'destroy']);
+
+    // variables
     
+    Route::get('/variables/montant/{id}', [VariableController::class, 'montant']);
 
-
+    // Dashboard
+    Route::prefix('dashboard')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index']);
+    });
 });
 Route::get('/mois-comptable/{id}/export-pdf', [MoisComptableController::class, 'exportMoisPDF'])
      ->name('mois-comptable.export-pdf');
 // routes/web.php
 Route::get('/mois-comptable-pro/{id}/export-pdf', [MoisComptableController::class, 'exportPdf'])
-    ->name('mois-comptable-pro.export-pdf');
+     ->name('mois-comptable-pro.export-pdf');
 // text regles de calcul : 
 // Pour tester avec Postman ou API
 

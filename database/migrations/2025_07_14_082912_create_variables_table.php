@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('categorie_id')->nullable()->constrained('categories')->onDelete('set null');
             $table->string('nom');
-            $table->enum('type', ['simple', 'sous-tableau']);
+            $table->enum('type', ['simple', 'sous-tableau'])->default('simple');
             $table->decimal('budget_prevu', 12, 2)->nullable();
             $table->decimal('depense_reelle', 12, 2)->default(0);
             $table->boolean('calcule')->default(false);  

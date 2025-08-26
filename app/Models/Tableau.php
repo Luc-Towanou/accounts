@@ -23,6 +23,15 @@ class Tableau extends Model
         'nature',
     ];
 
+// public function moisComptable(): BelongsTo
+// {
+//     return $this->belongsTo(MoisComptable::class);
+// }
+/**
+ * Relation vers le mois comptable
+ *
+ * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+ */
 public function moisComptable()
 {
     return $this->belongsTo(MoisComptable::class, 'mois_comptable_id');
