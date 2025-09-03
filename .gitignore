@@ -5,6 +5,9 @@
 .env.production
 .phpactor.json
 .phpunit.result.cache
+a faire.md
+concepts.md
+lookme.md
 /.fleet
 /.idea
 /.nova
@@ -16,9 +19,12 @@
 /public/build
 /public/hot
 /public/storage
+/views/dash
+/routes/web.php
 /storage/*.key
 /storage/pail
 /vendor
+/vision
 Homestead.json
 Homestead.yaml
 Thumbs.db
