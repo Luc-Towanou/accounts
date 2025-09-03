@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\api\AuthController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategorieController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\MoisComptableController;
