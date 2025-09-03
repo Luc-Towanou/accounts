@@ -22,6 +22,7 @@ return new class extends Migration
             $table->integer('interval')->default(1); // tous les X jours/semaines/mois
             $table->date('date_debut');
             $table->date('date_fin')->nullable(); // ex : abonnement qui s’arrête après 12 mois
+            $table->boolean('auto_apply')->default(true); // true = applique automatiquement, false = nécessite validation utilisateur
             $table->timestamps();
         });
 

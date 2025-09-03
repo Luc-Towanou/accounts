@@ -1,0 +1,9 @@
+services:
+    api:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: event-rush-api:latest
+        restart: always
+        ports:
+            - 8002:80

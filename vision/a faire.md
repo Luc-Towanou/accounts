@@ -200,3 +200,45 @@
 3. UX : feedback instantané, responsive, alertes visuelles.
 4. Statistiques et analyses pour valeur ajoutée (dashboards et graphiques).
 5. Sécurité et contrôle des accès.
+
+
+
+## Ce 28/08 ** à faire :
+
+    - Creation des tables : clients : id, type : beneficiaire/payeur, nom, lieux;
+    - Definition d'une nouvelle propriété pour la colonne 'statut_objet' de *oprations* pour gestion des operations programmées.
+    - Faire: /stats/evolution?from=YYYY-MM&to=YYYY-MM (série mensuelle revenus/dépenses/net);
+    - /alerts
+        Lister les alertes générées (voir section G).
+        (Option) endpoints to “acknowledge/resolve”.
+    - Tâches planifiées (Scheduler/CRON)
+        Génération des récurrences
+        Commande operations:generate-recurrentes exécutée daily.
+        Logique: pour chaque récurrence active, créer les opérations manquantes jusqu’à today (respect date_fin).
+        Idempotence (ne pas dupliquer) via un verrou ou requête d’existence.
+        Entretien
+        (Option) alerts:prune pour nettoyer alertes expirées, receipts:prune pour fichiers orphelins.
+    - Alertes intelligentes (Alerts)
+
+Seuils & déclencheurs
+
+Table alertes(id, user_id, cible_type [Variable|SousVariable|Tableau], cible_id, type, payload, level, status, created_at)
+
+Déclencher dans l’observer quand :
+
+depense_reelle >= 80% budget_prevu (warning),
+
+depense_reelle > 100% (danger),
+
+pic anormal vs moyenne des 3 derniers mois, etc.
+
+Endpoint /alerts + marquer “vu”.
+    -Recommandations (Insights V1)
+
+Service simple de recommandations
+
+“Tu as dépensé +X% que le mois dernier en {cat}.”
+
+“Tes abonnements mensuels = {somme} / {%} des charges fixes.”
+
+Exposé via /insights (front-friendly).O0

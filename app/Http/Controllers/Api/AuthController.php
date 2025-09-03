@@ -168,26 +168,26 @@ class AuthController extends Controller
      * @param \Illuminate\Http\Request $request
      * @return mixed|\Illuminate\Http\JsonResponse
      */
-        //     public function sendResetOtp(Request $request)
-        // {
-        //     $request->validate(['email' => 'required|email']);
+            public function sendResetOtp(Request $request)
+        {
+            $request->validate(['email' => 'required|email']);
 
-        //     $user = User::where('email', $request->email)->first();
+            $user = User::where('email', $request->email)->first();
 
-        //     if (!$user) {
-        //         return response()->json(['message' => 'Aucun compte trouvé avec cet email.'], 404);
-        //     }
+            if (!$user) {
+                return response()->json(['message' => 'Aucun compte trouvé avec cet email.'], 404);
+            }
 
-        //     $otp = rand(100000, 999999);
-        //     $user->update([
-        //         'otp' => $otp,
-        //         'otp_expires_at' => now()->addMinutes(10),
-        //     ]);
+            $otp = rand(100000, 999999);
+            $user->update([
+                'otp' => $otp,
+                'otp_expires_at' => now()->addMinutes(10),
+            ]);
 
-        //     Mail::to($user->email)->send(new OtpMail($otp)); 
+            Mail::to($user->email)->send(new OtpMail($otp)); 
 
-        //     return response()->json(['message' => 'Un code OTP de réinitialisation a été envoyé par email.']);
-        // }
+            return response()->json(['message' => 'Un code OTP de réinitialisation a été envoyé par email.']);
+        }
 
 
 

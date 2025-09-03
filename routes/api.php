@@ -55,11 +55,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // variables
     
     Route::get('/variables/montant/{id}', [VariableController::class, 'montant']);
-
     // Dashboard
     Route::prefix('dashboard')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'index']);
+        Route::get('/', [DashboardController::class, 'index']);
     });
+
+    // Recurences 
+    Route::post('/recurrences/{recurrence}/appliquer', [RecurrenceController::class, 'appliquer']);
 });
 Route::get('/mois-comptable/{id}/export-pdf', [MoisComptableController::class, 'exportMoisPDF'])
      ->name('mois-comptable.export-pdf');

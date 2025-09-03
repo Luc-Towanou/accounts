@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Recurrence;
+use App\Models\RecurrenceLog;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -80,4 +81,31 @@ class RecurrenceController extends Controller
         $recurrence->delete();
         return response()->json(null, 204);
     }
+
+    public function appliquer(Request $request, Recurrence $recurrence)
+    {
+        $date = $request->input('date', now()->toDateString());
+
+        $log = RecurrenceLog::firstOrCreate(
+            ['recurrence_id' => $recurrence->id, 'date_execution' => $date],
+            ['appliquee' => false]
+        );
+
+        if ($log->appliquee) {
+            return response()->json(['message' => 'Déjà appliquée.'], 400);
+        }
+
+        // Création effective de l’opération
+        if ($recurrence->operation_id) {
+            $operation = $recurrence->operation->replicate();
+            $operation->date = $date;
+            $operation->save();
+        }
+
+        $log->appliquee = true;
+        $log->save();
+
+        return response()->json(['message' => 'Récurrence appliquée avec succès.']);
+    }
+
 }
