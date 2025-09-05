@@ -15,13 +15,13 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    //
+
     public function register(Request $request)
     {
         $request->validate([
         'name' => 'required|string|max:255',
         'email' => 'required|email|unique:users,email',
-        'password' => 'required|min:6|confirmed',
+        // 'password' => 'required|min:6|confirmed',
         
         ]);
 
@@ -29,13 +29,75 @@ class AuthController extends Controller
         $user = User::create([
         'name' => $request->name,
         'email' => $request->email,
-        'password' => Hash::make($request->password),
+        // 'password' => Hash::make($request->password),
         'otp' => $otp,
         'otp_expires_at' => Carbon::now()->addMinutes(10) // expirer après 10 minutes
         ]);
             Mail::to($user->email)->send(new otpMail($otp));
 
-    return response()->json(['message' => 'Inscription réussie, vérifiez votre email pour le code OTP.']);
+    return response()->json(['message' => 'Veuillez verifier votre mail en nous renvoyant le code otp que vous venez de recevoir.']);
+    }
+    //
+    // public function register(Request $request)
+    // {
+    //     $request->validate([
+    //     'name' => 'required|string|max:255',
+    //     'email' => 'required|email|unique:users,email',
+    //     // 'password' => 'required|min:6|confirmed',
+        
+    //     ]);
+
+    //     $otp = rand(100000, 999999); // générer  OTP
+    //     $user = User::create([
+    //     'name' => $request->name,
+    //     'email' => $request->email,
+    //     'password' => Hash::make($request->password),
+    //     'otp' => $otp,
+    //     'otp_expires_at' => Carbon::now()->addMinutes(10) // expirer après 10 minutes
+    //     ]);
+    //         Mail::to($user->email)->send(new otpMail($otp));
+
+    // return response()->json(['message' => 'Inscription réussie, vérifiez votre email pour le code OTP.']);
+    // }
+    /**
+     * Verification Mail par Otp
+     * @param \Illuminate\Http\Request $request
+     * @return mixed|\Illuminate\Http\JsonResponse
+     */
+    public function verifymailByOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|digits:6',
+            'password' => 'required|min:6|confirmed',
+        ]);
+
+        $user = User::where('email', $request->email)->where('otp', $request->otp)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Code OTP invalide.'], 400);
+        }
+
+        if (Carbon::now()->gt($user->otp_expires_at)) {
+            return response()->json(['message' => 'Code OTP expiré.'], 400);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password),
+            'email_verified_at' => Carbon::now(),
+            'otp' => null,
+            'otp_expires_at' => null
+        ]);
+
+        $user->notify(new ConfirmationInscription());
+                // Connexion + génération du token
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Email confirmé avec succès. vous pouvez desormais vous connecter.',
+            'user' => $user,
+            'token' => $token
+            ]);
     }
     public function login(Request $request)
         {
@@ -102,38 +164,7 @@ class AuthController extends Controller
     return response()->json(['message' => 'Déconnexion réussie.'], 200);
     } 
 
-    /**
-     * Verification Mail par Otp
-     * @param \Illuminate\Http\Request $request
-     * @return mixed|\Illuminate\Http\JsonResponse
-     */
-    public function verifymailByOtp(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email',
-        'otp' => 'required|digits:6',
-    ]);
-
-    $user = User::where('email', $request->email)->where('otp', $request->otp)->first();
-
-    if (!$user) {
-        return response()->json(['message' => 'Code OTP invalide.'], 400);
-    }
-
-    if (Carbon::now()->gt($user->otp_expires_at)) {
-        return response()->json(['message' => 'Code OTP expiré.'], 400);
-    }
-
-    $user->update([
-        'email_verified_at' => Carbon::now(),
-        'otp' => null,
-        'otp_expires_at' => null
-    ]);
-
-    $user->notify(new ConfirmationInscription());
-
-    return response()->json(['message' => 'Email confirmé avec succès. vous pouvez desormais vous connecter via la page de login.']);
-}
+    
     
     /**
      * Renvoie de l'Otp pour Connexion apres inscription
