@@ -52,6 +52,7 @@ class MoisComptableFull extends Seeder
         foreach ($tableaux as $nomTableau) {
             $tableau = Tableau::updateOrCreate([
                 'nom' => $nomTableau,
+                'user_id' => $user->id,
                 'budget_prevu' => rand(50000, 150000),
                 'mois_comptable_id' => $mois->id, // à ajuster selon tes données
             ]);
@@ -63,6 +64,7 @@ class MoisComptableFull extends Seeder
 
                 $variable = Variable::updateOrCreate([
                     'tableau_id' => $tableau->id,
+                    'user_id' => $user->id,
                     'nom' => $nomVariable, 
                     'budget_prevu' => rand(10000, 30000),
                     'calcule' => $isCalculee,
@@ -77,6 +79,7 @@ class MoisComptableFull extends Seeder
                         $sousVariable = SousVariable::updateOrCreate([
                             // 'tableau_id' => $tableau->id,
                             'nom' => $nomSousVariable,
+                            'user_id' => $user->id,
                             'budget_prevu' => rand(5000, 7000),
                             'categorie_id' => rand(1, 10),
                             // 'calcule' => $isCalculee,
@@ -99,6 +102,7 @@ class MoisComptableFull extends Seeder
                     })->implode(' + ');
 
                     RegleCalcul::updateOrCreate([
+                        'user_id' => $user->id,
                         'expression' => $expression,
                         'variable_id' => $variable->id,
                     ]);
@@ -109,6 +113,7 @@ class MoisComptableFull extends Seeder
 
                         $sousVariable = SousVariable::updateOrCreate([
                             'variable_id' => $variable->id,
+                            'user_id' => $user->id,
                             'nom' => $nomSV,
                             'budget_prevu' => rand(2000, 8000),
                             'calcule' => false,
@@ -128,7 +133,355 @@ class MoisComptableFull extends Seeder
             }
         }
         });
+//         {
+//   "mois": "Mai",
+//   "annee": 2025,
+//   "date_debut": "2025-05-01",
+//   "date_fin": "2025-05-31",
+//   "budget_prevu": 500000,
+//   "tableaux": [
+//     {
+//       "nom": "Vie Quotidienne",
+//       "budget_prevu": 100000,
+//       "nature": "sortie",
+//       "variables": [
+//         {
+//           "nom": "Variable_Vie Quotidienne1",
+//           "type": "simple",
+//           "budget_prevu": 20000,
+//           "calcule": false,
+//         },
+//         {
+//           "nom": "Variable_Vie Quotidienne2",
+//           "type": "simple",
+//           "budget_prevu": 25000,
+//           "calcule": false,
+//         },
+//         {
+//           "nom": "Variable_Vie Quotidienne3",
+//           "type": "sous-tableau",
+//           "budget_prevu": 18000,
+//           "calcule": false,
+//           "sous_variables": [
+//             {
+//               "nom": "SV_1",
+//               "budget_prevu": 5000,
+//               "calcule": false,
+//             },
+//             {
+//               "nom": "SV_2",
+//               "budget_prevu": 7000,
+//               "calcule": false,
+//             }
+//           ]
+//         },
+//         {
+//           "nom": "Variable_Vie Quotidienne4",
+//           "type": "sous-tableau",
+//           "budget_prevu": 15000,
+//           "calcule": false,
+//           "sous_variables": [
+//             {
+//               "nom": "SV_1",
+//               "budget_prevu": 6000,
+//               "calcule": false,
+//             }
+//           ]
+//         },
+//         {
+//           "nom": "Variable_simpleVie Quotidienne",
+//           "type": "simple",
+//           "budget_prevu": 22000,
+//           "calcule": false,
+//         }
+//       ]
+//     },
+//     {
+//       "nom": "Loisirs",
+//       "budget_prevu": 120000,
+//       "nature": "sortie",
+//       "variables": [
+//         {
+//           "nom": "Variable_Loisirs1",
+//           "type": "simple",
+//           "budget_prevu": 23000,
+//           "calcule": false,
+//         },
+//         {
+//           "nom": "Variable_Loisirs2",
+//           "type": "simple",
+//           "budget_prevu": 27000,
+//           "calcule": false,
+//         },
+//         {
+//           "nom": "Variable_Loisirs3",
+//           "type": "sous-tableau",
+//           "budget_prevu": 16000,
+//           "calcule": false,
+//           "sous_variables": [
+//             {
+//               "nom": "SV_1",
+//               "budget_prevu": 5500,
+//               "calcule": false,
+//             },
+//             {
+//               "nom": "SV_2",
+//               "budget_prevu": 6500,
+//               "calcule": false,
+//             }
+//           ]
+//         },
+//         {
+//           "nom": "Variable_Loisirs4",
+//           "type": "sous-tableau",
+//           "budget_prevu": 14000,
+//           "calcule": false,
+//           "sous_variables": [
+//             {
+//               "nom": "SV_1",
+//               "budget_prevu": 4500,
+//               "calcule": false,
+//             }
+//           ]
+//         },
+//         {
+//           "nom": "Variable_simpleLoisirs",
+//           "type": "simple",
+//           "budget_prevu": 24000,
+//           "calcule": false,
+//         }
+//       ]
+//     },
+//     {
+//       "nom": "Santé",
+//       "budget_prevu": 90000,
+//       "nature": "entree",
+//       "variables": [
+//         {
+//           "nom": "Variable_Santé1",
+//           "type": "simple",
+//           "budget_prevu": 21000,
+//           "calcule": false,
+//         },
+//         {
+//           "nom": "Variable_Santé2",
+//           "type": "simple",
+//           "budget_prevu": 26000,
+//           "calcule": false,
+//         },
+//         {
+//           "nom": "Variable_Santé3",
+//           "type": "sous-tableau",
+//           "budget_prevu": 17000,
+//           "calcule": false,
+//           "sous_variables": [
+//             {
+//               "nom": "SV_1",
+//               "budget_prevu": 5000,
+//               "calcule": false,
+//             },
+//             {
+//               "nom": "SV_2",
+//               "budget_prevu": 6000,
+//               "calcule": false,
+//             }
+//           ]
+//         },
+//         {
+//           "nom": "Variable_Santé4",
+//           "type": "sous-tableau",
+//           "budget_prevu": 13000,
+//           "calcule": false,
+//           "sous_variables": [
+//             {
+//               "nom": "SV_1",
+//               "budget_prevu": 4000,
+//               "calcule": false,
+//             }
+//           ]
+//         },
+//         {
+//           "nom": "Variable_simpleSanté",
+//           "type": "simple",
+//           "budget_prevu": 20000,
+//           "calcule": false,
+//         }
+//       ]
+//     },
+//     {
+//       "nom": "Éducation",
+//       "budget_prevu": 80000,
+//       "nature": "sortie",
+//       "variables": [
+//         {
+//           "nom": "Variable_Éducation1",
+//           "type": "simple",
+//           "budget_prevu": 22000,
+//           "calcule": false,
+//         },
+//         {
+//           "nom": "Variable_Éducation2",
+//           "type": "simple",
+//           "budget_prevu": 24000,
+//           "calcule": false,
+//         },
+//         {
+//           "nom": "Variable_Éducation3",
+//           "type": "sous-tableau",
+//           "budget_prevu": 15000,
+//           "calcule": false,
+//           "sous_variables": [
+//             {
+//               "nom": "SV_1",
+//               "budget_prevu": 5300,
+//               "calcule": false,
+//             },
+//             {
+//               "nom": "SV_2",
+//               "budget_prevu": 6200,
+//               "calcule": false,
+//             }
+//           ]
+//         },
+//         {
+//           "nom": "Variable_Éducation4",
+//           "type": "sous-tableau",
+//           "budget_prevu": 16000,
+//           "calcule": false,
+//           "sous_variables": [
+//             {
+//               "nom": "SV_1",
+//               "budget_prevu": 4100,
+//               "calcule": false,
+//             }
+//           ]
+//         },
+//         {
+//           "nom": "Variable_simpleÉducation",
+//           "type": "simple",
+//           "budget_prevu": 23000,
+//           "calcule": false,
+//         }
+//       ]
+//     },
+//     {
+//       "nom": "Transports",
+//       "budget_prevu": 70000,
+//       "nature": "sortie",
+//       "variables": [
+//         {
+//           "nom": "Variable_Transports1",
+//           "type": "simple",
+//           "budget_prevu": 19000,
+//           "calcule": false,
+//         },
+//         {
+//           "nom": "Variable_Transports2",
+//           "type": "simple",
+//           "budget_prevu": 21000,
+//           "calcule": false,
+//         },
+//         {
+//           "nom": "Variable_Transports3",
+//           "type": "sous-tableau",
+//           "budget_prevu": 14000,
+//           "calcule": false,
+//           "sous_variables": [
+//             {
+//               "nom": "SV_1",
+//               "budget_prevu": 4800,
+//               "calcule": false,
+//             },
+//             {
+//               "nom": "SV_2",
+//               "budget_prevu": 5900,
+//               "calcule": false,
+//             }
+//           ]
+//         },
+//         {
+//           "nom": "Variable_Transports4",
+//           "type": "sous-tableau",
+//           "budget_prevu": 12000,
+//           "calcule": false,
+//           "sous_variables": [
+//             {
+//               "nom": "SV_1",
+//               "budget_prevu": 4300,
+//               "calcule": false,
+//             }
+//           ]
+//         },
+//         {
+//           "nom": "Variable_simpleTransports",
+//           "type": "simple",
+//           "budget_prevu": 18000,
+//           "calcule": false,
+//         }
+//       ]
+//     },
+//     {
+//       "nom": "Investissements",
+//       "budget_prevu": 150000,
+//       "nature": "entree",
+//       "variables": [
+//         {
+//           "nom": "Variable_Investissements1",
+//           "type": "simple",
+//           "budget_prevu": 30000,
+//           "calcule": false,
+//         },
+//         {
+//           "nom": "Variable_Investissements2",
+//           "type": "simple",
+//           "budget_prevu": 35000,
+//           "calcule": false,
+//         },
+//         {
+//           "nom": "Variable_Investissements3",
+//           "type": "sous-tableau",
+//           "budget_prevu": 20000,
+//           "calcule": false,
+//           "sous_variables": [
+//             {
+//               "nom": "SV_1",
+//               "budget_prevu": 7000,
+//               "calcule": false,
+//             },
+//             {
+//               "nom": "SV_2",
+//               "budget_prevu": 8000,
+//               "calcule": false,
+//             }
+//           ]
+//         },
+//         {
+//           "nom": "Variable_Investissements4",
+//           "type": "sous-tableau",
+//           "budget_prevu": 18000,
+//           "calcule": false,
+//           "sous_variables": [
+//             {
+//               "nom": "SV_1",
+//               "budget_prevu": 6500,
+//               "calcule": false,
+//             }
+//           ]
+//         },
+//         {
+//           "nom": "Variable_simpleInvestissements",
+//           "type": "simple",
+//           "budget_prevu": 28000,
+//           "calcule": false,
+//         }
+//       ]
+//     }
+//   ]
+// }
+
     }
+
+    
     
 }
 
