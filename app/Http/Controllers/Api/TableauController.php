@@ -19,17 +19,18 @@ class TableauController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $tableauSortie = $user->tableaux()
-                                          ->where('nature', 'sortie')
-                                          ->with('variables', 'variables.sousVariables', 'variables.regleCalcul')->get();
-        $tableauEntree = $user->tableaux()
-                                          ->where('nature', 'entree')
-                                          ->with('variables', 'variables.sousVariables', 'variables.regleCalcul')->get();
-        
+        // $tableauSortie = $user->tableaux()
+        //                                   ->where('nature', 'sortie')
+        //                                   ->with('variables', 'variables.sousVariables', 'variables.regleCalcul')->get();
+        // $tableauEntree = $user->tableaux()
+        //                                   ->where('nature', 'entree')
+        //                                   ->with('variables', 'variables.sousVariables', 'variables.regleCalcul')->get();
+        $tableau = $user->tableaux()->with('variables', 'variables.sousVariables', 'variables.regleCalcul')->get();
         return response()->json([
         'message' => 'Liste de vos tableaux',
-        'sorties' => $tableauSortie,
-        'entrees' => $tableauEntree,
+        // 'sorties' => $tableauSortie,
+        // 'entrees' => $tableauEntree,
+        'tableaux' => $tableau,
     ],200);
     }
 
