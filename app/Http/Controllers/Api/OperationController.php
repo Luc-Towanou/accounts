@@ -221,7 +221,8 @@ class OperationController extends Controller
     {
         $user = Auth::user();
         $operation = Operation::findOrFail($operationId);
-        $variable = $operation->variable;
+        $variable = $operation->variable ?? $operation->sousVariable->variable;
+        // dd($variable);
         if($variable->user_id !== $user->id) {
             return response()->json('Non autorisé', 401);
         }

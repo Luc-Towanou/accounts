@@ -18,7 +18,7 @@ use Exception;
 class MoisComptableController extends Controller
 {
     //
-    // public function store
+    // public function index
 
       //
     public function index()
@@ -218,54 +218,70 @@ class MoisComptableController extends Controller
     }
 
 
-public function exportPdf($id)
-{
-    $mois = MoisComptable::with([
-        'tableaux.variables.sousVariables.operations'
-    ])->findOrFail($id);
+    public function exportPdf($id)
+    {
+        $mois = MoisComptable::with([
+            'tableaux.variables.sousVariables.operations'
+        ])->findOrFail($id);
 
-    // Calculs pour l'analyse financière
-    $totalBudget = 0;
-    $totalDepense = 0;
-    $categories = [];
+        // Calculs pour l'analyse financière
+        $totalBudget = 0;
+        $totalDepense = 0;
+        $categories = [];
 
-    foreach ($mois->tableaux as $tableau) {
-        foreach ($tableau->variables as $variable) {
-            $budget = $variable->budget_prevu ?? 0;
-            $depense = $variable->depense_reelle ?? 0;
+        foreach ($mois->tableaux as $tableau) {
+            foreach ($tableau->variables as $variable) {
+                $budget = $variable->budget_prevu ?? 0;
+                $depense = $variable->depense_reelle ?? 0;
 
-            $totalBudget += $budget;
-            $totalDepense += $depense;
+                $totalBudget += $budget;
+                $totalDepense += $depense;
 
-            $categories[] = [
-                'nom' => $variable->nom,
-                'budget' => $budget,
-                'depense' => $depense,
-                'ecart' => $budget - $depense,
-                'taux_depense' => $budget > 0 ? round(($depense / $budget) * 100, 1) : 0
-            ];
+                $categories[] = [
+                    'nom' => $variable->nom,
+                    'budget' => $budget,
+                    'depense' => $depense,
+                    'ecart' => $budget - $depense,
+                    'taux_depense' => $budget > 0 ? round(($depense / $budget) * 100, 1) : 0
+                ];
+            }
         }
+
+        $analyse = [
+            'totalBudget' => $totalBudget,
+            'totalDepense' => $totalDepense,
+            'solde' => $totalBudget - $totalDepense,
+            'categories' => $categories,
+            'tauxUtilisation' => $totalBudget > 0 ? round(($totalDepense / $totalBudget) * 100, 1) : 0
+        ];
+
+        // Génération du PDF
+        $pdf = Pdf::loadView('pdf.mois2', compact('mois', 'analyse'))
+                ->setPaper('a4', 'portrait');
+
+        return $pdf->download("MoisComptable-{$mois->nom}.pdf");
     }
 
-    $analyse = [
-        'totalBudget' => $totalBudget,
-        'totalDepense' => $totalDepense,
-        'solde' => $totalBudget - $totalDepense,
-        'categories' => $categories,
-        'tauxUtilisation' => $totalBudget > 0 ? round(($totalDepense / $totalBudget) * 100, 1) : 0
-    ];
+    public function mois_actif() {
+        $user = Auth::user(); 
+        $moisActif = MoisComptable::where('user_id', $user->id)
+                                ->where('annee', now()->year)
+                                ->where('mois', now()->locale('fr')->monthName)
+                                ->first();
+        // $last = MoisComptable::where('user_id', $user->id)
+        //                         ->orderBy('id', 'desc')                        
+        //                         ->first();
+        // dd([ 'mois_actif' => $moisActif,
+        //             'last' => $last,
+        //            'now' => now()->locale('fr')->monthName,] );
+        if(!$moisActif) return response()->json('Empty', 422) ;
+        return response()->json([
+            'Mois comptable en cours' => $moisActif->mois,
+            'mois'                    => $moisActif->load('tableaux.variables.sousVariables', 'tableaux.variables.regleCalcul'),
+        ], 200) ; 
 
-    // Génération du PDF
-    $pdf = Pdf::loadView('pdf.mois2', compact('mois', 'analyse'))
-              ->setPaper('a4', 'portrait');
-
-    return $pdf->download("MoisComptable-{$mois->nom}.pdf");
-}
 
 
-
-
-
-
+    }
 
 }
