@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\RegleCalcul;
 use App\Models\SousVariable;
+use App\Models\Tableau;
 use App\Models\Variable;
 use App\Services\RegleCalculService;
 use App\Services\ReglesCalculService;
@@ -20,26 +21,24 @@ class SousVariableController extends Controller
 {
     $user = Auth::user();
 
-    $VariablesSortie = $user->moisComptables()
-        ->tableaux()->where('nature', 'sortie')
-        ->with(['variables.sousVariable']) // eager loading
+    $VariablesSortie = $user->tableaux()->where('nature', 'sortie')
+        ->with(['variables.sousVariables']) // eager loading
         ->get()
         ->pluck('variables')
         ->flatten()
-        ->pluck('sousVariable')
+        ->pluck('sousVariables')
         ->flatten();
 
-    $VariablesEntree = $user->moisComptables()
-        ->tableaux()->where('nature', 'entree')
-        ->with(['variables.sousVariable'])
+    $VariablesEntree = $user->tableaux()->where('nature', 'entree')
+        ->with(['variables.sousVariables'])
         ->get()
         ->pluck('variables')
         ->flatten()
-        ->pluck('sousVariable')
+        ->pluck('sousVariables')
         ->flatten();
 
     return response()->json([
-        'message' => 'Liste de vos Variables',
+        'message' => 'Liste de vos Sous-Variables',
         'sorties' => $VariablesSortie,
         'entrees' => $VariablesEntree,
     ], 200);
@@ -55,6 +54,22 @@ class SousVariableController extends Controller
             abort(401, 'Non autorisé');
         } 
         return $variable->sousVariables;
+    }
+
+    // 🔍 Liste des sous-variables pour un tableau donné
+    public function indexByTableau($tableauId)
+    {
+        $user = Auth::user();
+        $tableau = Tableau::where('id', $tableauId)
+                          ->where('user_id', $user->id)
+                          ->first();
+        
+        if($tableau) {
+                    return $tableau->variables()->with('sousVariables')->get();
+
+        }else {
+            return response()->json(['message' => 'Tableau non trouvé ou non autorisé'], 404);
+        }
     }
 
     // ➕ Créer une sous-variable

@@ -54,9 +54,9 @@ class VariableController extends Controller
         $user = Auth::user();
         $tableau = Tableau::where('id', $tableauId)
                           ->where('user_id', $user->id)
-                          ->exists();
+                          ->first();
         if($tableau) {
-                    return $tableau->variables()->with('sousVariables', 'operations')->get();
+                    return $tableau->variables()->with('sousVariables')->get();
 
         }else {
             return response()->json(['message' => 'Tableau non trouvé ou non autorisé'], 404);

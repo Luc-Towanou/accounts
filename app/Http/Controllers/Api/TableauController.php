@@ -31,7 +31,7 @@ class TableauController extends Controller
         // 'sorties' => $tableauSortie,
         // 'entrees' => $tableauEntree,
         'tableaux' => $tableau,
-    ],200);
+        ],200);
     }
 
      // création avec variables et sous-variables intégrées
@@ -265,6 +265,30 @@ class TableauController extends Controller
         }
         Tableau::destroy($id);
         return response()->json(['message' => 'Tableau supprimé avec succès'], 200);
+    }
+
+    // public function moisActifTableaux() {
+    //     $user = Auth::user(); 
+    //     $moisActif = MoisComptable::where('user_id', $user->id)
+    //                             ->where('annee', now()->year)
+    //                             ->where('mois', now()->month)
+    //                             ->get();
+    // }
+    public function moisTableaux($moisId) {
+        $user = Auth::user(); 
+        $mois_comptable = MoisComptable::where('user_id', $user->id)
+                                ->where('id', $moisId)
+                                ->first();
+        if(!$mois_comptable) {
+            return response()->json('Mois comptable inexistant pour cet utilisateur', 401);
+        }
+        $tableaux = $mois_comptable->tableaux()
+                                   ->with('variables', 'variables.sousVariables', 'variables.regleCalcul')
+                                   ->get();
+        return response()->json([
+        'message' => 'Liste des tableaux de ' . $mois_comptable->mois . ' ' . $mois_comptable->annee, 
+        'tableaux' => $tableaux,
+        ],200);
     }
 
 }

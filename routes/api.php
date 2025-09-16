@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\SousVariableController;
 use App\Http\Controllers\Api\TableauController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VariableController;
+use App\Http\Middleware\EnsureMoisComptable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,8 +22,8 @@ Route::get('/user', function (Request $request) {
 
 Route::prefix('auth')->group(function () { 
     Route::post('/register', [AuthController::class, 'register']); 
-    Route::post('/login', [AuthController::class, 'login']); 
-    Route::post('/login/otp', [AuthController::class, 'loginByOtp']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login/otp', [AuthController::class, 'loginByOtp']);//->middleware([EnsureMoisComptable::class]);
     Route::post('/verifymailotp', [AuthController::class, 'verifymailByOtp']);
     Route::post('/resendotp', [AuthController::class, 'resendOtp']);
     // Route::post('/password/sendotp', [AuthController::class, 'sendResetOtp']);
@@ -53,16 +54,38 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('operations/{operationId}', [OperationController::class, 'destroy']);
 
     // variables
+     Route::prefix('variables')->group(function () {
+        Route::get('/montant/{id}', [VariableController::class, 'montant']);
+        Route::get('/tableau/{tableauId}', [VariableController::class, 'indexByTableau']);
+
+    });
+
+    // sous-variables
+     Route::prefix('sous-variables')->group(function () {
+        Route::get('/montant/{id}', [SousVariableController::class, 'montant']);
+        Route::get('/tableau/{tableauId}', [SousVariableController::class, 'indexByTableau']);
+
+    });
     
-    Route::get('/variables/montant/{id}', [VariableController::class, 'montant']);
     // Dashboard
     Route::prefix('dashboard')->group(function () {
         Route::get('/', [DashboardController::class, 'index']);
     });
 
+    // mois comptable 
+    Route::prefix('mois-comptables')->group(function () {
+        // Route::get('actif/tableaux', [TableauController::class, , 'moisActifTableaux']); //
+        Route::get('{moisComptableId}/tableaux', [TableauController::class, 'moisTableaux']); //
+    });
+
     // Recurences 
     Route::post('/recurrences/{recurrence}/appliquer', [RecurrenceController::class, 'appliquer']);
-});
+
+    // user
+    Route::prefix('user')->group(function () {
+        Route::get('/mois-comptables/actif', [MoisComptableController::class, 'mois_actif']);        //
+    });
+})->middleware([EnsureMoisComptable::class]);
 Route::get('/mois-comptable/{id}/export-pdf', [MoisComptableController::class, 'exportMoisPDF'])
      ->name('mois-comptable.export-pdf');
 // routes/web.php
