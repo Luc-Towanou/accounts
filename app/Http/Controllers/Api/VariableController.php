@@ -76,11 +76,11 @@ class VariableController extends Controller
             'regle.expression' => 'nullable|string',
 
             // Si type = sous-tableau
-            'sous_variables' => 'required_if:type,sous-tableau|array',
+            'sous_variables' => 'nullable|array',
             'sous_variables.*.nom' => 'required|string',
             'sous_variables.*.budget_prevu' => 'nullable|numeric',
             'sous_variables.*.calcule' => 'boolean',            
-            'sous_variables.*.regle.expression' => 'nullable|string',
+            // 'sous_variables.*.regle.expression' => 'nullable|string',
         ]);
         
         //connected user
@@ -177,15 +177,16 @@ class VariableController extends Controller
                         'user_id'       => $user->id,
                         'nom'           => $svData['nom'],
                         'budget_prevu'  => $svData['budget_prevu'] ?? null,
-                        'calcule'       => $svData['calcule'] ?? false,
+                        'calcule'       => false,
+                        // 'calcule'       => $svData['calcule'] ?? false,
                     ]);
 
-                    if (($svData['calcule'] ?? false) && isset($svData['regle']['expression'])) {
-                        $sousvariable->regleCalcul()->create([
-                            'user_id'   => $user->id,
-                            'expression'=> $svData['regle']['expression'],
-                        ]);
-                    }
+                    // if (($svData['calcule'] ?? false) && isset($svData['regle']['expression'])) {
+                    //     $sousvariable->regleCalcul()->create([
+                    //         'user_id'   => $user->id,
+                    //         'expression'=> $svData['regle']['expression'],
+                    //     ]);
+                    // }
                 }
             } elseif ($variable->calcule) {
                 $variable->regleCalcul()->create([
