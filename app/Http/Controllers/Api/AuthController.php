@@ -9,6 +9,7 @@ use App\Notifications\ConfirmationInscription;
 use App\Notifications\PasswordResetConfirmation;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -17,26 +18,66 @@ class AuthController extends Controller
 {
 
     public function register(Request $request)
-    {
-        $request->validate([
+{
+    $request->validate([
         'name' => 'required|string|max:255',
         'email' => 'required|email|unique:users,email',
-        // 'password' => 'required|min:6|confirmed',
-        
-        ]);
+    ]);
 
-        $otp = rand(100000, 999999); // générer  OTP
+    DB::beginTransaction();
+
+    try {
+        $otp = rand(100000, 999999); // générer OTP
+
         $user = User::create([
-        'name' => $request->name,
-        'email' => $request->email,
-        // 'password' => Hash::make($request->password),
-        'otp' => $otp,
-        'otp_expires_at' => Carbon::now()->addMinutes(10) // expirer après 10 minutes
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($otp),
+            'otp' => $otp,
+            'otp_expires_at' => Carbon::now()->addMinutes(10), // expire après 10 minutes
         ]);
-            Mail::to($user->email)->send(new otpMail($otp));
 
-    return response()->json(['message' => 'Veuillez verifier votre mail en nous renvoyant le code otp que vous venez de recevoir.']);
+        // Envoi du mail (peut échouer)
+        Mail::to($user->email)->send(new otpMail($otp));
+
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Veuillez vérifier votre mail et nous renvoyer le code OTP que vous venez de recevoir.'
+        ], 201);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'message' => 'Erreur lors de l\'inscription. Veuillez réessayer.',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
+    // public function register(Request $request)
+    // {
+    //     $request->validate([
+    //     'name' => 'required|string|max:255',
+    //     'email' => 'required|email|unique:users,email',
+    //     // 'password' => 'required|min:6|confirmed',
+        
+    //     ]);
+    //     // dd($request);
+    //     $otp = rand(100000, 999999); // générer  OTP
+    //     // dd($otp);
+    //     $user = User::create([
+    //     'name' => $request->name,
+    //     'email' => $request->email,
+    //     'password' => Hash::make($otp),
+    //     'otp' => $otp,
+    //     'otp_expires_at' => Carbon::now()->addMinutes(10) // expirer après 10 minutes
+    //     ]);
+    //     //  dd($user);
+    //     Mail::to($user->email)->send(new otpMail($otp));
+
+    // return response()->json(['message' => 'Veuillez verifier votre mail en nous renvoyant le code otp que vous venez de recevoir.']);
+    // }
     //
     // public function register(Request $request)
     // {
