@@ -50,7 +50,8 @@ class TableauController extends Controller
             'variables.*.calcule' => 'boolean',            
             'variables.*.regle.expression' => 'nullable|string',
 
-            'variables.*.sous_variables' => 'required_if:variables.*.type,sous-tableau|array',
+            // 'variables.*.sous_variables' => 'required_if:variables.*.type,sous-tableau|array',
+            'variables.*.sous_variables' => 'nullable|array',
             'variables.*.sous_variables.*.nom' => 'required|string',
             'variables.*.sous_variables.*.budget_prevu' => 'nullable|numeric',
             'variables.*.sous_variables.*.calcule' => 'boolean',            
