@@ -65,40 +65,32 @@ class VariableController extends Controller
 
 
     // Créer une variable dans un tableau
+
     public function store(Request $request, ReglesCalculService $validator)
     {
         $validated = $request->validate([
             'tableau_id' => 'required|exists:tableaus,id',
             'nom' => 'required|string',
             'type' => 'required|in:simple,sous-tableau',
-            'budget_prevu' => 'nullable|numeric',               
-            'calcule' => 'boolean',            
+            'budget_prevu' => 'nullable|numeric',
+            'calcule' => 'nullable|boolean',
+            // 'calcule' => 'sometimes|boolean',
             'regle.expression' => 'nullable|string',
 
             // Si type = sous-tableau
             'sous_variables' => 'nullable|array',
             'sous_variables.*.nom' => 'required|string',
             'sous_variables.*.budget_prevu' => 'nullable|numeric',
-            'sous_variables.*.calcule' => 'boolean',            
-            // 'sous_variables.*.regle.expression' => 'nullable|string',
+            'sous_variables.*.calcule' => 'boolean',
         ]);
-        
-        //connected user
-        
-        // $mois = Tableau::where('user_id', $user->id)
-        //                      ->where('id', $tableau->mois_comptable_id)
-        //                      ->first();
 
         $user = Auth::user(); 
-
         $tableau = Tableau::findOrFail($validated['tableau_id']);
 
-        
-        
         if ($tableau->user_id !== $user->id) {
             abort(401, 'Non autorisé');
-        }   
-        
+        }
+
         if (Variable::where('tableau_id', $tableau->id)
                     ->where('nom', $validated['nom'])
                     ->exists()) {
@@ -107,48 +99,8 @@ class VariableController extends Controller
             ], 422);
         }
 
-    //     $variable = DB::transaction(function () use ($validated, $validator, $user) {
-    //     $variable = Variable::create([
-    //         'user_id'       => $user->id,
-    //         'tableau_id'    => $validated['tableau_id'],
-    //         'nom'           => $validated['nom'],
-    //         'type'          => $validated['type'],
-    //         'budget_prevu'  => $validated['budget_prevu'] ?? null,
-    //         'calcule'       => $validated['calcule'] ?? false,
-    //         // 'regle_calcul'  => $validated['regle']['expression'] ?? null,
-    //     ]);
-
-    //     if ($variable->type === 'sous-tableau') {
-    //         foreach ($validated['sous_variables'] ?? [] as $svData) {
-    //             $sousvariable = $variable->sousVariables()->create([
-    //                 'user_id'       => $user->id,
-    //                 'nom'           => $svData['nom'],
-    //                 'budget_prevu'  => $svData['budget_prevu'] ?? null,
-    //                 'calcule'       => $svData['calcule'] ?? false,
-    //                 // 'regle_calcul' => $svData['regle']['expression'] ?? null,
-    //             ]);
-    //             if (($svData['calcule'] ?? false) && isset($svData['regle']['expression'])) {
-    //                         $validator->validerExpression($svData['regle']['expression']);
-    //                         $sousvariable->regleCalcul()->create([
-    //                             'user_id'       => $user->id,
-    //                             'expression' => $svData['regle']['expression'],
-    //                     ]);
-    //                 }//ne bouge pas cet acolade
-    //         }
-    //     } elseif ($variable->calcule) {
-                        
-    //         $validator->validerExpression($validated['regle']['expression']);
-    //         $variable->regleCalcul()->create([
-    //             'user_id'       => $user->id,
-    //             'expression' => $validated['regle']['expression'],
-    //         ]);
-
-    //     }
-    //     return $variable;
-    // });
-
-
-        $variable = DB::transaction(function () use ($validated, $validator, $user) {
+        try {
+            DB::beginTransaction();
 
             // 🔹 Validation AVANT la création
             if ($validated['type'] === 'sous-tableau') {
@@ -157,49 +109,136 @@ class VariableController extends Controller
                         $validator->validerExpression($svData['regle']['expression']);
                     }
                 }
-            } elseif ($validated['calcule']) {
+            } elseif ($validated['calcule'] ?? false) {
                 $validator->validerExpression($validated['regle']['expression']);
             }
 
-            // 🔹 Création seulement après validation
+            // 🔹 Création de la variable
             $variable = Variable::create([
                 'user_id'       => $user->id,
                 'tableau_id'    => $validated['tableau_id'],
                 'nom'           => $validated['nom'],
                 'type'          => $validated['type'],
                 'budget_prevu'  => $validated['budget_prevu'] ?? null,
-                'calcule'       => $validated['calcule'] ?? false,
+                'calcule'       => $validated['calcule'] ?? false //$request->calcule ?? false,
             ]);
 
+            // 🔹 Gestion des sous-variables
             if ($variable->type === 'sous-tableau') {
                 foreach ($validated['sous_variables'] ?? [] as $svData) {
-                    $sousvariable = $variable->sousVariables()->create([
+                    $variable->sousVariables()->create([
                         'user_id'       => $user->id,
                         'nom'           => $svData['nom'],
                         'budget_prevu'  => $svData['budget_prevu'] ?? null,
-                        'calcule'       => false,
-                        // 'calcule'       => $svData['calcule'] ?? false,
+                        'calcule'       => false, 
                     ]);
-
-                    // if (($svData['calcule'] ?? false) && isset($svData['regle']['expression'])) {
-                    //     $sousvariable->regleCalcul()->create([
-                    //         'user_id'   => $user->id,
-                    //         'expression'=> $svData['regle']['expression'],
-                    //     ]);
-                    // }
                 }
-            } elseif ($variable->calcule) {
+            } 
+            // 🔹 Gestion de la règle de calcul
+            elseif ($variable->calcule) {
                 $variable->regleCalcul()->create([
                     'user_id'   => $user->id,
                     'expression'=> $validated['regle']['expression'],
                 ]);
             }
 
-            return $variable;
-        });
+            DB::commit();
 
-    return $variable->load('regleCalcul', 'sousVariables.regleCalcul');
+            return $variable->load('regleCalcul', 'sousVariables.regleCalcul');
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Erreur lors de la création de la variable',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
     }
+
+    // public function store(Request $request, ReglesCalculService $validator)
+    // {
+    //     $validated = $request->validate([
+    //         'tableau_id' => 'required|exists:tableaus,id',
+    //         'nom' => 'required|string',
+    //         'type' => 'required|in:simple,sous-tableau',
+    //         'budget_prevu' => 'nullable|numeric',               
+    //         'calcule' => 'boolean',            
+    //         'regle.expression' => 'nullable|string',
+
+    //         // Si type = sous-tableau
+    //         'sous_variables' => 'nullable|array',
+    //         'sous_variables.*.nom' => 'required|string',
+    //         'sous_variables.*.budget_prevu' => 'nullable|numeric',
+    //         'sous_variables.*.calcule' => 'boolean',            
+    //         // 'sous_variables.*.regle.expression' => 'nullable|string',
+    //     ]);
+        
+    //     //connected user
+
+    //     $user = Auth::user(); 
+
+    //     $tableau = Tableau::findOrFail($validated['tableau_id']);
+
+    //     // dd($tableau) ;
+        
+    //     if ($tableau->user_id !== $user->id) {
+    //         abort(401, 'Non autorisé');
+    //     }   
+        
+    //     if (Variable::where('tableau_id', $tableau->id)
+    //                 ->where('nom', $validated['nom'])
+    //                 ->exists()) {
+    //         return response()->json([
+    //             'message' => 'Une variable avec ce nom existe déjà pour ce tableau',
+    //         ], 422);
+    //     }
+        
+    //     $variable = DB::transaction(function () use ($validated, $validator, $user) {
+
+    //         // 🔹 Validation AVANT la création
+    //         if ($validated['type'] === 'sous-tableau') {
+    //             foreach ($validated['sous_variables'] ?? [] as $svData) {
+    //                 if (($svData['calcule'] ?? false) && isset($svData['regle']['expression'])) {
+    //                     $validator->validerExpression($svData['regle']['expression']);
+    //                 }
+    //             }
+    //         } elseif ($validated['calcule']) {
+    //             $validator->validerExpression($validated['regle']['expression']);
+    //         }
+
+    //         // 🔹 Création seulement après validation
+    //         $variable = Variable::create([
+    //             'user_id'       => $user->id,
+    //             'tableau_id'    => $validated['tableau_id'],
+    //             'nom'           => $validated['nom'],
+    //             'type'          => $validated['type'],
+    //             'budget_prevu'  => $validated['budget_prevu'] ?? null,
+    //             'calcule'       => $validated['calcule'] ?? false,
+    //         ]);
+
+    //         if ($variable->type === 'sous-tableau') {
+    //             foreach ($validated['sous_variables'] ?? [] as $svData) {
+    //                 $sousvariable = $variable->sousVariables()->create([
+    //                     'user_id'       => $user->id,
+    //                     'nom'           => $svData['nom'],
+    //                     'budget_prevu'  => $svData['budget_prevu'] ?? null,
+    //                     'calcule'       => false,
+    //                     // 'calcule'       => $svData['calcule'] ?? false,
+    //                 ]);
+
+    //             }
+    //         } elseif ($variable->calcule) {
+    //             $variable->regleCalcul()->create([
+    //                 'user_id'   => $user->id,
+    //                 'expression'=> $validated['regle']['expression'],
+    //             ]);
+    //         }
+
+    //         return $variable;
+    //     });
+
+    // return $variable->load('regleCalcul', 'sousVariables.regleCalcul');
+    // }
 
 
 
