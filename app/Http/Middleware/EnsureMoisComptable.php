@@ -77,6 +77,7 @@ class EnsureMoisComptable
         // ]); 
         if ($moisComptable->wasRecentlyCreated) {
             $dernierMois = MoisComptable::where('id', 20)
+                ->where('user_id', $user->id)
                 ->where(function ($q) use ($moisComptable) {
                     $q->where('annee', '<', $moisComptable->annee)
                       ->orWhere(function ($q2) use ($moisComptable) {
