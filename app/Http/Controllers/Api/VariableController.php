@@ -109,7 +109,7 @@ class VariableController extends Controller
                         $validator->validerExpression($svData['regle']['expression']);
                     }
                 }
-            } elseif ($validated['calcule'] ?? false) {
+            } elseif (($validated['calcule'] ?? false) && isset($validated['regle']['expression'])) {
                 $validator->validerExpression($validated['regle']['expression']);
             }
 
@@ -299,34 +299,79 @@ class VariableController extends Controller
         return $variable;
     }
 
+
     public function destroy($id)
     {
-        $variable  = Variable::findOrFail($id);
-        // $this->authorize('delete', $variable);
+        try {
+            DB::beginTransaction();
 
-        $user = Auth::user() ; 
+            $variable = Variable::findOrFail($id);
+            $user = Auth::user(); 
 
-        $tableau = Tableau::findOrFail($variable->tableau_id);
+            $tableau = Tableau::findOrFail($variable->tableau_id);
 
-        
-        // $mois = MoisComptable::where('user_id', $user->id)
-        //                      ->where('id', $tableau->mois_comptable_id)
-        //                      ->first();
+            // Vérification autorisation
+            if ($tableau->user_id !== $user->id) {
+                DB::rollBack();
+                return response()->json(['message' => 'Non autorisé'], 401);
+            }
 
-        if ($tableau->user_id !== $user->id) {
-            abort(401, 'Non autorisé');
-        }   
-        
-        
-        
-        $regleCalcul = new RegleCalculService();
-        $parente = $regleCalcul->variableRegleCalcul($variable);
-        if ($parente) { 
-            throw new Exception("Cette variable est déjà utilisée dans la règle de calcul de : " . $parente->nom);
+            // Vérification sous-variables
+            if ($variable->sousVariables()->exists()) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => 'Impossible de supprimer cette variable car elle contient des sous-variables. Supprimez-les d\'abord.'
+                ], 400);
+            }
+
+            // Vérification règle de calcul
+            $regleCalcul = new RegleCalculService();
+            $parente = $regleCalcul->variableRegleCalcul($variable);
+            if ($parente) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => "Cette variable est déjà utilisée dans la règle de calcul de : " . $parente->nom
+                ], 400);
+            }
+
+            // Suppression
+            $variable->delete();
+
+            DB::commit();
+
+            return response()->json(['message' => 'Variable supprimée avec succès'], 200);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Erreur lors de la suppression de la variable',
+                'error'   => $e->getMessage()
+            ], 500);
         }
-        Variable::destroy($id);
-        return response()->json(['message' => 'Variable supprimée avec succès']); 
     }
+    // public function destroy($id)
+    // {
+    //     $variable  = Variable::findOrFail($id);
+    //     // $this->authorize('delete', $variable);
+
+    //     $user = Auth::user() ; 
+
+    //     $tableau = Tableau::findOrFail($variable->tableau_id);
+
+    //     if ($tableau->user_id !== $user->id) {
+    //         abort(401, 'Non autorisé');
+    //     }   
+        
+        
+        
+    //     $regleCalcul = new RegleCalculService();
+    //     $parente = $regleCalcul->variableRegleCalcul($variable);
+    //     if ($parente) { 
+    //         throw new Exception("Cette variable est déjà utilisée dans la règle de calcul de : " . $parente->nom);
+    //     }
+    //     Variable::destroy($id);
+    //     return response()->json(['message' => 'Variable supprimée avec succès']); 
+    // }
 
      /**
      * Retourne le montant d’une variable pour une période donnée

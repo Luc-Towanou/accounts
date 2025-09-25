@@ -26,7 +26,6 @@ Route::prefix('auth')->group(function () {
     Route::post('/login/otp', [AuthController::class, 'loginByOtp']);//->middleware([EnsureMoisComptable::class]);
     Route::post('/verifymailotp', [AuthController::class, 'verifymailByOtp']);
     Route::post('/resendotp', [AuthController::class, 'resendOtp']);
-    // Route::post('/password/sendotp', [AuthController::class, 'sendResetOtp']);
     Route::post('/password/resetotp', [AuthController::class, 'ResetPasswordbyOtp']);
 
 

@@ -9,6 +9,7 @@ use App\Notifications\ConfirmationInscription;
 use App\Notifications\PasswordResetConfirmation;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -216,20 +217,22 @@ class AuthController extends Controller
 {
     $request->validate(['email' => 'required|email']);
 
+    
     $user = User::where('email', $request->email)->first();
     if (!$user) {
         return response()->json(['message' => 'User non trouvé.'], 404);
     }
 
+    
     // Générer un nouvel OTP
     $otp = rand(100000, 999999);
     $user->update([
         'otp' => $otp,
         'otp_expires_at' => Carbon::now()->addMinutes(10),
     ]);
-
+    // dd($request);
     Mail::to($user->email)->send(new OtpMail($otp));
-
+    // dd($request);
     return response()->json(['message' => 'Un nouveau code OTP a été envoyé.']);
     }
 
@@ -241,25 +244,57 @@ class AuthController extends Controller
      * @return mixed|\Illuminate\Http\JsonResponse
      */
             public function sendResetOtp(Request $request)
-        {
-            $request->validate(['email' => 'required|email']);
+           { 
+            try {
+                DB::beginTransaction();
 
-            $user = User::where('email', $request->email)->first();
+                $request->validate(['email' => 'required|email']);
 
-            if (!$user) {
-                return response()->json(['message' => 'Aucun compte trouvé avec cet email.'], 404);
+                $user = User::where('email', $request->email)->first();
+
+                if (!$user) {
+                    return response()->json(['message' => 'Aucun compte trouvé avec cet email.'], 404);
+                }
+
+                $otp = rand(100000, 999999);
+                $user->update([
+                    'otp' => $otp,
+                    'otp_expires_at' => now()->addMinutes(10),
+                ]);
+
+                Mail::to($user->email)->send(new OtpMail($otp));
+
+                DB::commit();
+
+                return response()->json(['message' => 'Un code OTP de réinitialisation a été envoyé par email.']);
+            } catch (\Throwable $e) {
+                DB::rollBack();
+                Log::error('Erreur lors de l\'envoi OTP : ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+                return response()->json([
+                    'message' => 'Erreur lors de l\'envoi du code OTP.',
+                    'error' => $e->getMessage()
+                ], 500);
             }
-
-            $otp = rand(100000, 999999);
-            $user->update([
-                'otp' => $otp,
-                'otp_expires_at' => now()->addMinutes(10),
-            ]);
-
-            Mail::to($user->email)->send(new OtpMail($otp)); 
-
-            return response()->json(['message' => 'Un code OTP de réinitialisation a été envoyé par email.']);
         }
+        // {
+        //     $request->validate(['email' => 'required|email']);
+
+        //     $user = User::where('email', $request->email)->first();
+
+        //     if (!$user) {
+        //         return response()->json(['message' => 'Aucun compte trouvé avec cet email.'], 404);
+        //     }
+
+        //     $otp = rand(100000, 999999);
+        //     $user->update([
+        //         'otp' => $otp,
+        //         'otp_expires_at' => now()->addMinutes(10),
+        //     ]);
+
+        //     Mail::to($user->email)->send(new OtpMail($otp)); 
+
+        //     return response()->json(['message' => 'Un code OTP de réinitialisation a été envoyé par email.']);
+        // }
 
 
 
@@ -270,36 +305,86 @@ class AuthController extends Controller
      */
     public function ResetPasswordbyOtp(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email|exists:Users,email',
-            'otp' => 'required',
-            'password' => 'required|string|min:6|confirmed',
+        try {
+            DB::beginTransaction();
 
-        ]);
+            $request->validate([
+                'email' => 'required|email',
+                'otp' => 'required',
+                'password' => 'required|string|min:6|confirmed',
+            ]);
 
-        $user = User::where('email', $request->email)
-                    ->where('otp', $request->otp)
-                    ->first();
+            $user = User::where('email', $request->email)
+                        ->where('otp', $request->otp)
+                        ->first();
 
-        if (!$user) {
-            return response()->json(['message' => 'Code OTP invalide.'], 400);
+            if (!$user) {
+                return response()->json(['message' => 'Code OTP ou email invalide.'], 401);
+            }
+
+            if (now()->greaterThan($user->otp_expires_at)) {
+                return response()->json(['message' => 'Code OTP expiré.'], 400);
+            }
+
+            $user->password = Hash::make($request->password);
+            $user->otp = null;
+            $user->otp_expires_at = null;
+            $user->save();
+
+            // Envoi notification
+            $user->notify(new PasswordResetConfirmation());
+
+            DB::commit();
+
+            return response()->json(['message' => 'Mot de passe réinitialisé avec succès.']);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Erreur reset password OTP : ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'message' => 'Erreur lors de la réinitialisation du mot de passe.',
+                'error' => $e->getMessage()
+            ], 500);
         }
+}
+    // {
+    //     $request->validate([
+    //         'email' => 'required|email',
+    //         'otp' => 'required',
+    //         'password' => 'required|string|min:6|confirmed',
 
-        if (now()->greaterThan($user->otp_expires_at)) {
-            return response()->json(['message' => 'Code OTP expiré.'], 400);
-        }
+    //     ]);
+
+    //     // dd($request);
+
+    //     $user = User::where('email', $request->email)
+    //                 ->where('otp', $request->otp)
+    //                 ->first();
+
+    //     // if (!$user) {
+    //     //     return response()->json(['message' => 'Code OTP invalide.'], 400);
+    //     // }
+
+                        
+    //     if (!$user) {
+    //         // dd($user->otp);
+    //         return response()->json(['message' => 'Code OTP ou email invalide.'], 401);
+    //     }
+
+    //     if (now()->greaterThan($user->otp_expires_at)) {
+    //         return response()->json(['message' => 'Code OTP expiré.'], 400);
+    //     }
         
-        $user->password = Hash::make($request->password);
-        $user->otp = null;
-        $user->otp_expires_at = null;
-        $user->save();
+    //     $user->password = Hash::make($request->password);
+    //     $user->otp = null;
+    //     $user->otp_expires_at = null;
+    //     $user->save();
         
-        //Envoi de la notification
-        $user->notify(new PasswordResetConfirmation());
+    //     //Envoi de la notification
+    //     $user->notify(new PasswordResetConfirmation());
 
-        return response()->json(['message' => 'Mot de passe réinitialisé avec succès.'], );
+    //     return response()->json(['message' => 'Mot de passe réinitialisé avec succès.'], );
 
-    }
+    // }
 
 
 }

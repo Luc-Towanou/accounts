@@ -9,7 +9,7 @@ Route::get('dashboard/user/', function () {
     return view('dash.dashboard');
 });
 Route::get('dashboard/user_2/', function () {
-    return view('dash.dashboard_co');
+    return view('dash.dashboard_co'); 
 });
 
 Route::get('/dashboard/user_tr', fn() => view('dash.dashboard_tr1'));

@@ -7,6 +7,7 @@ use App\Models\MoisComptable;
 use App\Models\Tableau;
 use App\Models\User;
 use App\Services\ReglesCalculService;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -258,15 +259,53 @@ class TableauController extends Controller
     }
 
     public function destroy($id)
-    {
+        {
         $user = Auth::user();
-        $tableau = Tableau::findOrFail($id);
-        if($tableau->user_id !== $user->id){
-            return response()->json("Non auturisé", 401);
+
+        try {
+            DB::beginTransaction();
+
+            $tableau = Tableau::findOrFail($id);
+
+            // Vérification de l'autorisation
+            if ($tableau->user_id !== $user->id) {
+                return response()->json(["message" => "Non autorisé"], 401);
+            }
+
+            // Vérification des variables liées
+            if ($tableau->variables()->exists()) {
+                return response()->json([
+                    "message" => "Impossible de supprimer ce tableau car il contient des variables. Supprimez-les d'abord."
+                ], 400);
+            }
+
+            // Suppression
+            $tableau->delete();
+
+            DB::commit();
+
+            return response()->json([
+                "message" => "Tableau supprimé avec succès"
+            ], 200);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                "message" => "Erreur lors de la suppression du tableau",
+                "error"   => $e->getMessage()
+            ], 500);
         }
-        Tableau::destroy($id);
-        return response()->json(['message' => 'Tableau supprimé avec succès'], 200);
     }
+    // public function destroy($id)
+    // {
+    //     $user = Auth::user();
+    //     $tableau = Tableau::findOrFail($id);
+    //     if($tableau->user_id !== $user->id){
+    //         return response()->json("Non auturisé", 401);
+    //     }
+    //     Tableau::destroy($id);
+    //     return response()->json(['message' => 'Tableau supprimé avec succès'], 200);
+    // }
 
     // public function moisActifTableaux() {
     //     $user = Auth::user(); 
