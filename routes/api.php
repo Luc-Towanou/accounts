@@ -3,6 +3,7 @@
 use App\Http\Controllers\api\AuthController;
 use App\Http\Controllers\Api\CategorieController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\GoalController;
 use App\Http\Controllers\Api\MoisComptableController;
 use App\Http\Controllers\Api\OperationController;
 use App\Http\Controllers\Api\RecurrenceController;
@@ -61,8 +62,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index']);
     });
 });
+  
 Route::get('/mois-comptable/{id}/export-pdf', [MoisComptableController::class, 'exportMoisPDF'])
      ->name('mois-comptable.export-pdf');
+
 // routes/web.php
 Route::get('/mois-comptable-pro/{id}/export-pdf', [MoisComptableController::class, 'exportPdf'])
      ->name('mois-comptable-pro.export-pdf');
@@ -94,3 +97,14 @@ Route::prefix('regles-calcul/test')->group(function () {
     // 5. Annalyser une regles et renvoyer ses élements 
     Route::get('/analyse/elements/{id}', [RegleCalculController::class, 'analyseRegle']);
 });
+
+    //route pour les objectifs
+    
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/goals/list', [GoalController::class, 'list_goal']);
+        Route::post('/goals/add', [GoalController::class, 'ajouter_goal']);
+        Route::put('/goals/{id}', [GoalController::class, 'update']);
+        Route::get('/goals/{id}/progress', [GoalController::class, 'showProgress']);
+        Route::get('/goals/{id}/status', [GoalController::class, 'checkStatus']);
+        Route::delete('/goals/{id}', [GoalController::class, 'destroy']);
+    });

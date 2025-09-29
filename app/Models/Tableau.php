@@ -46,6 +46,9 @@ public function variables()
 {
     return $this->hasMany(Variable::class);
 }
-
+public function sousVariables()
+{
+        return $this->hasMany(SousVariable::class);
+}
 
 }

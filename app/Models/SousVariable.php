@@ -39,5 +39,8 @@ class SousVariable extends Model
     {
         return $this->belongsTo(User::class);
     }
-
+     public function tableaux()
+    {
+        return $this->belongsTo(Tableau::class, 'tableau_id');
+    }
 }

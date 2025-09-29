@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\SousTableau;
+use App\Models\Variable;
 use Illuminate\Http\Request;
 
 class SousTableauController extends Controller
 {
-    //
+    
     public function index()
     {
         return SousTableau::with('variables')->get();

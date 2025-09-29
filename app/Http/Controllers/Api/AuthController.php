@@ -12,10 +12,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    //
+    /**
+        * Enregistrement d'un nouvel utilisateur
+        * @unauthenticated
+     */
     public function register(Request $request)
     {
         $request->validate([
@@ -37,26 +41,26 @@ class AuthController extends Controller
 
     return response()->json(['message' => 'Inscription réussie, vérifiez votre email pour le code OTP.']);
     }
+
+    /**
+     * Connexion utilisateur
+     *
+     */
     public function login(Request $request)
-        {
-            $request->validate([
-                'email' => 'required|email',
-                'password' => 'required|string|min:6'
-            ]);
-            $user = User::where('email', $request->email)->first();
-            if (!$user || !Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-            'email' => ['Les identifiants sont incorrects.'],
-            ]);
-            }
-            $token = $user->createToken('api_token')->plainTextToken;
-            
-            return response()->json([
-            'user' => $user,
-            'token' => $token
-            ]);
+    {
+        $credentials = $request->validate([
+            'email' => 'required|string|email',
+            'password' => 'required|string',
+        ]);
+        if (!Auth::attempt($credentials)) {
+            return response()->json(['message' => 'Email ou mot de passe invalide'], 401);
         }
 
+        $user = Auth::user();
+          $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json(['message' => 'Login successful', 'token' => $token, 'user' => $user], 200);
+    }
     public function loginByOtp(Request $request)
     {
         $request->validate([
