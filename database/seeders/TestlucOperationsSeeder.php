@@ -17,7 +17,8 @@ class TestlucOperationsSeeder extends Seeder
     public function run(): void
     {
         // Pour testluc@gmail.com
-        $user = \App\Models\User::where('email', 'luctest@gmail.com')->first();
+        // $user = \App\Models\User::where('email', 'luctest@gmail.com')->first();
+        $user = \App\Models\User::where('id', 2)->first();
 
         foreach (Variable::where('type', 'simple')->where('user_id', $user->id)->get() as $variable) {
             if ($variable->regleCalcul) {

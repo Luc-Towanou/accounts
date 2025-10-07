@@ -107,7 +107,7 @@ class SousVariableController extends Controller
         // }
 
         return response()->json($sousVariable, 201);
-    }
+    } 
 
     // 🔎 Afficher une sous-variable
     public function show($id)

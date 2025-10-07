@@ -16,13 +16,13 @@ class TestlucUserMoisSeeder extends Seeder
     public function run(): void
     {
         //
-        $user = User::updateOrCreate([
-            'name' => 'TEST',
-            'prenom' => 'Luc',
-            'email' => 'luctest@gmail.com',
-        ], [
-            'password' => bcrypt('password'),
-        ]);
+        // $user = User::updateOrCreate([
+        //     'name' => 'TEST',
+        //     'prenom' => 'Luc',
+        //     'email' => 'luctest@gmail.com',
+        // ], [
+        //     'password' => bcrypt('password'),
+        // ]);
 
         for ($moisId = 5; $moisId < 9; $moisId++) {
             $nomMois = match ($moisId) {
@@ -36,7 +36,7 @@ class TestlucUserMoisSeeder extends Seeder
             $dateFin   = $dateDebut->copy()->endOfMonth()->endOfDay();
 
             MoisComptable::updateOrCreate([
-                'user_id' => $user->id,
+                'user_id' => 2,
                 'mois' => $nomMois,
                 'annee' => 2025,
             ], [

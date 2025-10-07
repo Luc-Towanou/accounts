@@ -82,7 +82,7 @@ class MoisComptableFullv0 extends Seeder
                     $variable = Variable::updateOrCreate([
                         'user_id' => $user->id,
                         'tableau_id' => $tableau->id,
-                        'categorie_id' => rand(1, 10),
+                        // 'categorie_id' => rand(1, 10),
                         'nom' => $nomVariable,
                         'budget_prevu' => rand(10000, 30000),
                         'calcule' => $isCalculee,
@@ -95,7 +95,7 @@ class MoisComptableFullv0 extends Seeder
                                 'user_id' => $user->id,
                                 'nom' => 'SousVariable_' . $svIndex,
                                 'budget_prevu' => rand(5000, 7000),
-                                'categorie_id' => rand(1, 10),
+                                // 'categorie_id' => rand(1, 10),
                                 'variable_id' => null, // reste libre 
                             ]);
                         }
@@ -133,7 +133,7 @@ class MoisComptableFullv0 extends Seeder
                                 'variable_id' => $variable->id,
                                 'nom' => 'SV_' . $j,
                                 'budget_prevu' => rand(2000, 8000),
-                                'categorie_id' => rand(1, 10),
+                                // 'categorie_id' => rand(1, 10),
                             ]);
 
                             // 1 à 3 opérations par sous-variable

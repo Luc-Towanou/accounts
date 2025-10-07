@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\TableauController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VariableController;
 use App\Http\Middleware\EnsureMoisComptable;
+use App\Models\MoisComptable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,7 @@ Route::prefix('auth')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [UserController::class, 'me']); // 
         Route::post('/logout', [AuthController::class, 'logout']); 
+        Route::get('/verify-token', [AuthController::class, 'validateToken']);
     });
 });
 
@@ -46,6 +48,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('operations', OperationController::class);
     Route::apiResource('regles-calcul', RegleCalculController::class);
     Route::apiResource('recurrences', RecurrenceController::class);
+    Route::apiResource('categories', CategorieController::class);
 
     // operations
     Route::get('operations/variable/{variableId}', [OperationController::class, 'index']);
@@ -75,6 +78,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('mois-comptables')->group(function () {
         // Route::get('actif/tableaux', [TableauController::class, , 'moisActifTableaux']); //
         Route::get('{moisComptableId}/tableaux', [TableauController::class, 'moisTableaux']); //
+
+        Route::get('{moisComptableId}/showMoisComptableCategorie', [MoisComptableController::class, 'showMoisComptableCategorie']); ////showMoisComptableCategorie
     });
 
     // Recurences 
@@ -94,7 +99,7 @@ Route::get('/mois-comptable-pro/{id}/export-pdf', [MoisComptableController::clas
 // Pour tester avec Postman ou API
 
 // Route::middleware(['auth:sanctum'])->prefix('regles-calcul/test')->group(function () {
-Route::apiResource('categories', CategorieController::class);
+
 Route::get('categories/{id}/variables', [CategorieController::class, 'variables']);
 Route::get('categories-count', [CategorieController::class, 'countVariables']);
 Route::get('categorie-slug/{slug}', [CategorieController::class, 'bySlug']);

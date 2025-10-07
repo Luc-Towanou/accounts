@@ -22,12 +22,15 @@ class DatabaseSeeder extends Seeder
         // ]);
 
         $this->call([
-            // UserSeeder::class,
-            // // MoisComptableFull::class,
+            UserSeeder::class,
             // CategorieSeeder::class,
+            MoisComptableFullV0::class,
+            
             TestlucUserMoisSeeder::class,
             TestlucTableauxVariablesSeeder::class,
             TestlucOperationsSeeder::class,
-        ]);
+            DefaultCategoriesSeeder::class,
+            TestLucCategoriesSeeder::class,
+        ]); //1|UDjHtfCrkAOZovYSaVawlXWI1NyNoARhtvkWjaird68a481a
     }
 }
