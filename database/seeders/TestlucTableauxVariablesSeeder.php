@@ -18,7 +18,8 @@ class TestlucTableauxVariablesSeeder extends Seeder
     public function run(): void
     {
         // Pour testluc@gmail.com
-        $user = \App\Models\User::where('email', 'luctest@gmail.com')->first();
+        // $user = \App\Models\User::where('email', 'luctest@gmail.com')->first();
+        $user = \App\Models\User::where('id', 2)->firstOrFail();
 
         $tableauxNoms = ['Vie Quotidienne', 'Loisirs', 'Santé', 'Éducation', 'Transports', 'Investissements'];
 

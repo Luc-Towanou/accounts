@@ -9,6 +9,7 @@ use App\Notifications\ConfirmationInscription;
 use App\Notifications\PasswordResetConfirmation;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -141,6 +142,13 @@ class AuthController extends Controller
             'token' => $token
             ]);
     }
+
+    /**
+     * Summary of login
+     * @unauthenticated
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function login(Request $request)
         {
             $request->validate([
@@ -346,6 +354,24 @@ class AuthController extends Controller
             ], 500);
         }
 }
+
+    public function validateToken(Request $request)
+    {
+        $user = Auth::user();
+
+        if ($user) {
+            return response()->json([
+                'valid' => true,
+                'message' => 'Token is valid',
+                'user' => $user,
+            ]);
+        }
+
+        return response()->json([
+            'valid' => false,
+            'message' => 'Invalid or expired token',
+        ], 401);
+    }
     // {
     //     $request->validate([
     //         'email' => 'required|email',

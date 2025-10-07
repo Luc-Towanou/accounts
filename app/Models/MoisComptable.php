@@ -73,4 +73,9 @@ public function tableaux()
     return $this->hasMany(Tableau::class);
 }
 
+public function categories()
+{
+    return $this->hasMany(Categorie::class);
+}
+
 }

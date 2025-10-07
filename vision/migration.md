@@ -55,7 +55,6 @@ public function up(): void
             $table->id();
             $table->foreignId('tableau_id')->nullable()->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('categorie_id')->nullable()->constrained('categories')->onDelete('set null');
             $table->string('nom');
             $table->enum('type', ['simple', 'sous-tableau'])->default('simple');
             $table->decimal('budget_prevu', 12, 2)->nullable();
@@ -79,7 +78,6 @@ public function up(): void
             $table->decimal('depense_reelle', 12, 2)->default(0);  
             // $table->text('regle_calcul')->nullable(); //
             $table->string('statut_objet')->default('actif');
-            $table->foreignId('categorie_id')->nullable()->constrained('categories')->onDelete('set null');
             $table->boolean('calcule')->default(false);  
             $table->timestamps();
         });
@@ -114,8 +112,6 @@ public function up(): void
             SQL
                     );
 
-            // $table->check('(variable_id IS NOT NULL AND sous_variable_id IS NULL) OR (variable_id IS NULL AND sous_variable_id IS NOT NULL)');
-
     }
 
 // 6. Règles de calcul
@@ -142,7 +138,7 @@ public function up(): void
             )
             SQL
                     );
-            // $table->check('(variable_id IS NOT NULL AND sous_variable_id IS NULL) OR (variable_id IS NULL AND sous_variable_id IS NOT NULL)');
+           
        
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\MoisComptableRessource;
 use App\Models\MoisComptable;
 use App\Models\User;
 use App\Services\ReglesCalculService;
@@ -169,7 +170,7 @@ class MoisComptableController extends Controller
             return response()->json("Non auturisé", 401);
         }
         // $this->authorize('view', $moisComptable);
-        return $moisComptable->load('tableaux.variables');
+        return $moisComptable->load('tableaux.variables.sousVariables');
     }
 
     public function update(Request $request, MoisComptable $moisComptable)
@@ -284,4 +285,37 @@ class MoisComptableController extends Controller
 
     }
 
+    public function showMoisComptableCategorie($id)
+{
+    $mois = MoisComptable::with([
+        'categories' => function ($query) {
+            $query->root()->with('enfants');
+        }
+    ])->findOrFail($id);
+
+    return response()->json([
+        "Mois comptable en cours" => strtolower($mois->mois),
+        "mois" => new MoisComptableRessource($mois),
+        // [
+        //     "id" => $mois->id,
+        //     "user_id" => $mois->user_id,
+        //     "mois" => $mois->mois,
+        //     "annee" => $mois->annee,
+        //     "statut_objet" => $mois->statut_objet,
+        //     "date_debut" => $mois->date_debut,
+        //     "date_fin" => $mois->date_fin,
+        //     "budget_prevu" => $mois->budget_prevu,
+        //     "depense_reelle" => $mois->depense_reelle,
+        //     "gains_reelle" => $mois->gains_reelle,
+        //     "montant_net" => $mois->montant_net,
+        //     "created_at" => $mois->created_at,
+        //     "updated_at" => $mois->updated_at,
+        //     "tableaux" => CategorieResource::collection(
+        //         $mois->categories()->where('type', 'tableau')->root()->get()
+        //     ),
+        // ]
+    ]);
 }
+}
+
+
