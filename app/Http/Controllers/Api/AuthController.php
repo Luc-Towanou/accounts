@@ -129,7 +129,8 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'email_verified_at' => Carbon::now(),
             'otp' => null,
-            'otp_expires_at' => null
+            'otp_expires_at' => null,
+            'modifiable_at' => Carbon::now()->addDay(), // verrouille pendant 24h
         ]);
 
         $user->notify(new ConfirmationInscription());
@@ -336,7 +337,8 @@ class AuthController extends Controller
 
             $user->password = Hash::make($request->password);
             $user->otp = null;
-            $user->otp_expires_at = null;
+            $user->otp_expires_at = null;    
+            $user->modifiable_at = Carbon::now()->addDay();
             $user->save();
 
             // Envoi notification

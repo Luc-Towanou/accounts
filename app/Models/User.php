@@ -32,6 +32,7 @@ implements MustVerifyEmail
         'otp',
         'otp_expires_at',   
         'email_verified_at', 
+        'modifiable_at' ,
     ];
 
       // Les statuts disponibles
