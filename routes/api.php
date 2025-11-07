@@ -33,6 +33,7 @@ Route::prefix('auth')->group(function () {
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [UserController::class, 'me']); // 
+        Route::post('/update', [UserController::class, 'update']);
         Route::post('/logout', [AuthController::class, 'logout']); 
         Route::get('/verify-token', [AuthController::class, 'validateToken']);
     });
