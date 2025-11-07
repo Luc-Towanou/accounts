@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\SousVariableController;
 use App\Http\Controllers\Api\TableauController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VariableController;
+use App\Http\Controllers\Config\Mail\MailConfigController;
 use App\Http\Middleware\EnsureMoisComptable;
 use App\Models\MoisComptable;
 use Illuminate\Http\Request;
@@ -123,4 +124,8 @@ Route::prefix('regles-calcul/test')->group(function () {
 
     // 5. Annalyser une regles et renvoyer ses élements 
     Route::get('/analyse/elements/{id}', [RegleCalculController::class, 'analyseRegle']);
+
 });
+
+//// General route Admin
+Route::get('/mail-config', [MailConfigController::class, 'show']);
