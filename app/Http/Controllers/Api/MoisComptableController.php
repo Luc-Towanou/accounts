@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MoisComptableRessource;
+use App\Models\Categorie;
 use App\Models\MoisComptable;
 use App\Models\User;
 use App\Services\ReglesCalculService;
@@ -19,7 +20,6 @@ use Exception;
 class MoisComptableController extends Controller
 {
     //
-    // public function index
 
       //
     public function index()
@@ -35,6 +35,136 @@ class MoisComptableController extends Controller
         'mois' => $mois
     ],200);
     }
+
+
+    // public function store(Request $request, ReglesCalculService $validator)
+    // {
+    //     $validated = $request->validate([
+    //         'mois' => 'required|string',
+    //         'annee' => 'required|integer',
+    //         'date_debut' => 'nullable|date',
+    //         'date_fin' => 'nullable|date',
+    //         'budget_prevu' => 'nullable|numeric',
+
+    //         'tableaux' => 'nullable|array',
+    //         'tableaux.*.nom' => 'required_with:tableaux|string',
+    //         'tableaux.*.budget_prevu' => 'nullable|numeric',
+    //         'tableaux.*.nature' => 'required_with:tableaux|in:entree,sortie',
+
+    //         'tableaux.*.variables' => 'nullable|array',
+    //         'tableaux.*.variables.*.nom' => 'required_with:tableaux.*.variables|string',
+    //         'tableaux.*.variables.*.type' => 'required_with:tableaux.*.variables|in:simple,sous-tableau',
+    //         'tableaux.*.variables.*.budget_prevu' => 'nullable|numeric',
+    //         'tableaux.*.variables.*.calcule' => 'boolean',
+    //         'tableaux.*.variables.*.regle.expression' => 'nullable|string',
+
+    //         'tableaux.*.variables.*.sous_variables' => 'nullable|array',
+    //         'tableaux.*.variables.*.sous_variables.*.nom' => 'required_with:tableaux.*.variables.*.sous_variables|string',
+    //         'tableaux.*.variables.*.sous_variables.*.budget_prevu' => 'nullable|numeric',
+    //         'tableaux.*.variables.*.sous_variables.*.calcule' => 'boolean',
+    //         'tableaux.*.variables.*.sous_variables.*.regle.expression' => 'nullable|string',
+    //     ]);
+    //     // Utilisateur connecté  
+    //         // $user = auth()->user() ;
+    //         $user = Auth::user();
+
+    //         $ancienMois = MoisComptable::where('user_id', $user->id)
+    //                                 ->where('mois', $validated['mois'])
+    //                                 ->where('annee', $validated['annee'])
+    //                                 ->first();
+    //         if ($ancienMois) { 
+    //             return response()->json([
+    //                 'message' => 'Un mois comptable portant ce nom existe déjà',
+    //             ], 409);
+    //         }
+    //     try {
+    //         DB::transaction(function () use ($validated, $user, $validator) {
+
+    //             // 1. Validation TOUTES les expressions avant création
+    //             foreach ($validated['tableaux'] ?? [] as $tableauData) {
+    //                 foreach ($tableauData['variables'] ?? [] as $varData) {
+    //                     if (($varData['calcule'] ?? false) && isset($varData['regle']['expression'])) {
+    //                         $validator->validerExpression($varData['regle']['expression']);
+    //                     }
+    //                     if ($varData['type'] === 'sous-tableau') {
+    //                         foreach ($varData['sous_variables'] ?? [] as $sousVarData) {
+    //                             if (($sousVarData['calcule'] ?? false) && isset($sousVarData['regle']['expression'])) {
+    //                                 $validator->validerExpression($sousVarData['regle']['expression']);
+    //                             }
+    //                         }
+    //                     }
+    //                 }
+    //             }
+
+    //             // 2. Création effective après validation
+    //             $mois = $user->moisComptables()->create([
+    //                 'mois' => $validated['mois'],
+    //                 'annee' => $validated['annee'],
+    //             ]);
+
+    //             foreach ($validated['tableaux'] ?? [] as $tableauData) {
+    //                 $tableau = $mois->tableaux()->create([
+    //                     'user_id' => $user->id,
+    //                     'nom' => $tableauData['nom'],
+    //                     'budget_prevu' => $tableauData['budget_prevu'] ?? null,
+    //                     'nature' => $tableauData['nature'],
+    //                 ]);
+
+    //                 foreach ($tableauData['variables'] ?? [] as $varData) {
+    //                     if ($varData['type'] === 'sous-tableau') {
+    //                         $variable = $tableau->variables()->create([
+    //                             'user_id' => $user->id,
+    //                             'nom' => $varData['nom'],
+    //                             'budget_prevu' => $varData['budget_prevu'] ?? null,
+    //                             'type' => 'sous-tableau',
+    //                         ]);
+
+    //                         foreach ($varData['sous_variables'] ?? [] as $sousVarData) {
+    //                             $sousVar = $variable->sousVariables()->create([
+    //                                 'user_id' => $user->id,
+    //                                 'nom' => $sousVarData['nom'],
+    //                                 'calcule' => $sousVarData['calcule'] ?? false,
+    //                                 'budget_prevu' => $sousVarData['budget_prevu'] ?? null,
+    //                             ]);
+
+    //                             if (($sousVarData['calcule'] ?? false) && isset($sousVarData['regle']['expression'])) {
+    //                                 $sousVar->regleCalcul()->create([
+    //                                     'expression' => $sousVarData['regle']['expression'],
+    //                                 ]);
+    //                             }
+    //                         }
+
+    //                     } else {
+    //                         $variable = $tableau->variables()->create([
+    //                             'user_id' => $user->id,
+    //                             'nom' => $varData['nom'],
+    //                             'type' => 'simple',
+    //                             'calcule' => $varData['calcule'] ?? false,
+    //                             'budget_prevu' => $varData['budget_prevu'] ?? null,
+    //                         ]);
+
+    //                         if (($varData['calcule'] ?? false) && isset($varData['regle']['expression'])) {
+    //                             $variable->regleCalcul()->create([
+    //                                 'expression' => $varData['regle']['expression'],
+    //                             ]);
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         });
+
+    //         return response()->json([
+    //             'message' => 'Mois comptable créé avec succès 🎉',
+    //         ], 201);
+
+    //     } catch (\Throwable $e) {
+    //         return response()->json([
+    //             'message' => 'Impossible de créer le mois',
+    //             'error' => $e->getMessage()
+    //         ], 422);
+    //     }
+    // }
+
     public function store(Request $request, ReglesCalculService $validator)
     {
         $validated = $request->validate([
@@ -62,88 +192,67 @@ class MoisComptableController extends Controller
             'tableaux.*.variables.*.sous_variables.*.calcule' => 'boolean',
             'tableaux.*.variables.*.sous_variables.*.regle.expression' => 'nullable|string',
         ]);
-        // Utilisateur connecté  
-            // $user = auth()->user() ;
-            $user = Auth::user();
 
-            $ancienMois = MoisComptable::where('user_id', $user->id)
-                                    ->where('mois', $validated['mois'])
-                                    ->where('annee', $validated['annee'])
-                                    ->first();
-            if ($ancienMois) { 
-                return response()->json([
-                    'message' => 'Un mois comptable portant ce nom existe déjà',
-                ], 409);
-            }
+        $user = Auth::user();
+
+        // 🔎 Vérifier doublon mois
+        $ancienMois = MoisComptable::where('user_id', $user->id)
+            ->where('mois', $validated['mois'])
+            ->where('annee', $validated['annee'])
+            ->first();
+
+        if ($ancienMois) {
+            return response()->json(['message' => 'Un mois comptable portant ce nom existe déjà'], 409);
+        }
+
         try {
             DB::transaction(function () use ($validated, $user, $validator) {
-
-                // 1. Validation TOUTES les expressions avant création
-                foreach ($validated['tableaux'] ?? [] as $tableauData) {
-                    foreach ($tableauData['variables'] ?? [] as $varData) {
-                        if (($varData['calcule'] ?? false) && isset($varData['regle']['expression'])) {
-                            $validator->validerExpression($varData['regle']['expression']);
-                        }
-                        if ($varData['type'] === 'sous-tableau') {
-                            foreach ($varData['sous_variables'] ?? [] as $sousVarData) {
-                                if (($sousVarData['calcule'] ?? false) && isset($sousVarData['regle']['expression'])) {
-                                    $validator->validerExpression($sousVarData['regle']['expression']);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 2. Création effective après validation
+                // 1️⃣ Création du mois comptable
                 $mois = $user->moisComptables()->create([
                     'mois' => $validated['mois'],
                     'annee' => $validated['annee'],
+                    'date_debut' => $validated['date_debut'] ?? null,
+                    'date_fin' => $validated['date_fin'] ?? null,
                 ]);
 
+                // 2️⃣ Boucle sur les "tableaux" (niveau 1)
                 foreach ($validated['tableaux'] ?? [] as $tableauData) {
-                    $tableau = $mois->tableaux()->create([
+
+                    $categorieN1 = Categorie::create([
                         'user_id' => $user->id,
+                        'mois_comptable_id' => $mois->id,
                         'nom' => $tableauData['nom'],
-                        'budget_prevu' => $tableauData['budget_prevu'] ?? null,
+                        'niveau' => 1,
                         'nature' => $tableauData['nature'],
+                        'budget_prevu' => $tableauData['budget_prevu'] ?? null,
+                        'calcule' => false,
                     ]);
 
+                    // 3️⃣ Boucle sur les variables (niveau 2)
                     foreach ($tableauData['variables'] ?? [] as $varData) {
+                        $categorieN2 = Categorie::create([
+                            'user_id' => $user->id,
+                            'mois_comptable_id' => $mois->id,
+                            'parent_id' => $categorieN1->id,
+                            'nom' => $varData['nom'],
+                            'niveau' => 2,
+                            'nature' => $tableauData['nature'],
+                            'budget_prevu' => $varData['budget_prevu'] ?? null,
+                            'calcule' => $varData['calcule'] ?? false,
+                        ]);
+
+                        // 4️⃣ Si variable de type sous-tableau → sous-variables (niveau 3)
                         if ($varData['type'] === 'sous-tableau') {
-                            $variable = $tableau->variables()->create([
-                                'user_id' => $user->id,
-                                'nom' => $varData['nom'],
-                                'budget_prevu' => $varData['budget_prevu'] ?? null,
-                                'type' => 'sous-tableau',
-                            ]);
-
                             foreach ($varData['sous_variables'] ?? [] as $sousVarData) {
-                                $sousVar = $variable->sousVariables()->create([
+                                Categorie::create([
                                     'user_id' => $user->id,
+                                    'mois_comptable_id' => $mois->id,
+                                    'parent_id' => $categorieN2->id,
                                     'nom' => $sousVarData['nom'],
-                                    'calcule' => $sousVarData['calcule'] ?? false,
+                                    'niveau' => 3,
+                                    'nature' => $tableauData['nature'],
                                     'budget_prevu' => $sousVarData['budget_prevu'] ?? null,
-                                ]);
-
-                                if (($sousVarData['calcule'] ?? false) && isset($sousVarData['regle']['expression'])) {
-                                    $sousVar->regleCalcul()->create([
-                                        'expression' => $sousVarData['regle']['expression'],
-                                    ]);
-                                }
-                            }
-
-                        } else {
-                            $variable = $tableau->variables()->create([
-                                'user_id' => $user->id,
-                                'nom' => $varData['nom'],
-                                'type' => 'simple',
-                                'calcule' => $varData['calcule'] ?? false,
-                                'budget_prevu' => $varData['budget_prevu'] ?? null,
-                            ]);
-
-                            if (($varData['calcule'] ?? false) && isset($varData['regle']['expression'])) {
-                                $variable->regleCalcul()->create([
-                                    'expression' => $varData['regle']['expression'],
+                                    'calcule' => $sousVarData['calcule'] ?? false,
                                 ]);
                             }
                         }
@@ -158,10 +267,11 @@ class MoisComptableController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Impossible de créer le mois',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 422);
         }
     }
+
 
     public function show(MoisComptable $moisComptable)
     {
