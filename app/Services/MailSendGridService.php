@@ -13,7 +13,7 @@ class MailSendGridService
         $email->setFrom(env('MAIL_FROM_ADDRESS'), env('APP_NAME'));
         $email->setSubject($subject);
         $email->addTo($to);
-        $email->addContent("text/plain", $content);
+        $email->addContent("text/html", $content);
 
         $sendgrid = new SendGrid(env('SENDGRID_API_KEY'));
 
