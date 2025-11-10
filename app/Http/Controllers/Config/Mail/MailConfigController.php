@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Config\Mail;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Response;
 use Spatie\RouteAttributes\Attributes\Get;
 use Spatie\RouteAttributes\Attributes\Header;
@@ -18,12 +19,12 @@ class MailConfigController extends Controller
      * @get
      * @header
      * @return \Illuminate\Http\JsonResponse
-     * @unauthenticate
+     * @unauthenticated
      */
     #[Get('api/mail-config')]
     // #[Header(name: 'X-Admin-Key', required: true, description: 'Clé d’accès admin définie dans .env')]
    
-    public function show(Request $request)
+    public function showConfigMail(Request $request)
     {
         $request->validate([
             'X_Admin_Key' => 'required|string',
@@ -45,4 +46,27 @@ class MailConfigController extends Controller
             'MAIL_PASSWORD' => env('MAIL_PASSWORD'), // masqué pour la sécurité
         ]);
     }
+    /**
+     * Summary of testSendingMails
+     * @param \Illuminate\Http\Request $request
+     * @return string|\Illuminate\Http\JsonResponse
+     * @unautenticated
+     */
+    public function testSendingMails(Request $request)
+    {
+        $request->validate([
+            'X_Admin_Key' => 'required|string',
+        ]);
+        // Vérification de la clé d'accès (optionnel mais recommandé)
+        if ($request->X_Admin_Key !== env('ADMIN_KEY')) {
+            return response()->json(['error' => 'Accès refusé'], 403);
+        } 
+
+        Mail::raw('Ceci est un test SendGrid via SMTP', function ($message) {
+            $message->to('luctowanou@gmail.com')
+                    ->subject('Test SendGrid');
+        });
+
+        return 'Email envoyé !';
+        }
 }
