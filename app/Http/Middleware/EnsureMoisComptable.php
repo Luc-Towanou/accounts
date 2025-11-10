@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Categorie;
 use App\Models\MoisComptable;
 use Closure;
 use Illuminate\Http\Request;
@@ -90,44 +91,94 @@ class EnsureMoisComptable
                 ->first();
             // dd($dernierMois); 
             
-            if ($dernierMois) {
-                foreach ($dernierMois->tableaux as $tableau) {
-                    $nouveauTableau = $moisComptable->tableaux()->create([
-                        'user_id'        => $user->id,
-                        'nom'            => $tableau->nom,
-                        'budget_prevu'   => $tableau->budget_prevu,
-                        'description'    => $tableau->description,
-                        'nature'         => $tableau->nature,
-                        // autres colonnes ...
-                    ]);
+            // if ($dernierMois) {
+            //     foreach ($dernierMois->tableaux as $tableau) {
+            //         $nouveauTableau = $moisComptable->tableaux()->create([
+            //             'user_id'        => $user->id,
+            //             'nom'            => $tableau->nom,
+            //             'budget_prevu'   => $tableau->budget_prevu,
+            //             'description'    => $tableau->description,
+            //             'nature'         => $tableau->nature,
+            //             // autres colonnes ...
+            //         ]);
 
-                    foreach ($tableau->variables as $variable) {
-                        $nouvelleVariable = $nouveauTableau->variables()->create([
-                            'nom'           => $variable->nom,
-                            'user_id'       => $user->id,
-                            'budget_prevu'  => $variable->budget_prevu,
-                            'calcule'       => $variable->calcule,
-                            'type'          => $variable->type,
-                            'categorie_id'  => $variable->categorie_id,
-                        ]);
+            //         foreach ($tableau->variables as $variable) {
+            //             $nouvelleVariable = $nouveauTableau->variables()->create([
+            //                 'nom'           => $variable->nom,
+            //                 'user_id'       => $user->id,
+            //                 'budget_prevu'  => $variable->budget_prevu,
+            //                 'calcule'       => $variable->calcule,
+            //                 'type'          => $variable->type,
+            //                 'categorie_id'  => $variable->categorie_id,
+            //             ]);
 
-                        foreach ($variable->sousVariables as $sousVar) {
-                            $nouvelleSousVar = $nouvelleVariable->sousVariables()->create([
-                                'user_id'       => $user->id,
-                                'nom'           => $sousVar->nom,
-                                'budget_prevu'  => $sousVar->budget_prevu,
-                                'calcule'       => $sousVar->calcule,
-                                'categorie_id'  => $sousVar->categorie_id,
-                            ]);
-                        }
+            //             foreach ($variable->sousVariables as $sousVar) {
+            //                 $nouvelleSousVar = $nouvelleVariable->sousVariables()->create([
+            //                     'user_id'       => $user->id,
+            //                     'nom'           => $sousVar->nom,
+            //                     'budget_prevu'  => $sousVar->budget_prevu,
+            //                     'calcule'       => $sousVar->calcule,
+            //                     'categorie_id'  => $sousVar->categorie_id,
+            //                 ]);
+            //             }
 
-                        // regles de calcules restent à implementer.
+            //             // regles de calcules restent à implementer.
 
 
                         
+            //         }
+            //     }
+            // }
+            if ($dernierMois) {
+            foreach ($dernierMois->categories()->whereNull('parent_id')->get() as $categorieParent) {
+                // 🔹 Duplication de la catégorie principale (niveau 1)
+                $nouvelleCategorie = Categorie::create([
+                    'user_id'            => $user->id,
+                    'mois_comptable_id'  => $moisComptable->id,
+                    'nom'                => $categorieParent->nom,
+                    'budget_prevu'       => $categorieParent->budget_prevu,
+                    'description'        => $categorieParent->description,
+                    'nature'             => $categorieParent->nature,
+                    'niveau'             => 1,
+                    'calcule'            => $categorieParent->calcule,
+                    'statut_objet'       => 'actif',
+                ]);
+
+                // 🔹 Duplication des enfants (niveau 2)
+                foreach ($categorieParent->children as $enfant) {
+                    $nouvelEnfant = Categorie::create([
+                        'user_id'            => $user->id,
+                        'mois_comptable_id'  => $moisComptable->id,
+                        'parent_id'          => $nouvelleCategorie->id,
+                        'nom'                => $enfant->nom,
+                        'budget_prevu'       => $enfant->budget_prevu,
+                        'description'        => $enfant->description,
+                        'nature'             => $enfant->nature,
+                        'niveau'             => 2,
+                        'calcule'            => $enfant->calcule,
+                        'statut_objet'       => 'actif',
+                    ]);
+
+                    // 🔹 Duplication des petits-enfants (niveau 3)
+                    foreach ($enfant->children as $petitEnfant) {
+                        Categorie::create([
+                            'user_id'            => $user->id,
+                            'mois_comptable_id'  => $moisComptable->id,
+                            'parent_id'          => $nouvelEnfant->id,
+                            'nom'                => $petitEnfant->nom,
+                            'budget_prevu'       => $petitEnfant->budget_prevu,
+                            'description'        => $petitEnfant->description,
+                            'nature'             => $petitEnfant->nature,
+                            'niveau'             => 3,
+                            'calcule'            => $petitEnfant->calcule,
+                            'statut_objet'       => 'actif',
+                        ]);
                     }
+
+                    // 🧮 TODO: copier les règles de calcul plus tard si applicable
                 }
             }
+        }
         }
 
         return $moisComptable;
