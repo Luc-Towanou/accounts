@@ -7,6 +7,7 @@ use App\Mail\otpMail;
 use App\Models\User;
 use App\Notifications\ConfirmationInscription;
 use App\Notifications\PasswordResetConfirmation;
+use App\Services\MailSendGridService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -47,11 +48,17 @@ class AuthController extends Controller
         ]);
 
         // Envoi du mail (peut échouer)
-        Mail::to($user->email)->send(new otpMail($otp));
+        // Mail::to($user->email)->send(new otpMail($otp));
+        $mail = new otpMail($otp);
+        $html = $mail->render();
+
+        $sendgrid = new MailSendGridService();
+        $status = $sendgrid->send($user->email, 'Votre code OTP de confirmation', $html);
 
         DB::commit();
 
         return response()->json([
+            'status' => $status,
             'message' => 'Veuillez vérifier votre mail et nous renvoyer le code OTP que vous venez de recevoir.'
         ], 201);
 

@@ -32,6 +32,12 @@ class otpMail extends Mailable
 
     }
 
+    public function render(): string
+{
+    return "Bonjour,<br><br>Votre code OTP est : <strong>{$this->otp}</strong><br><br>Ce code expirera dans 10 minutes.";
+}
+
+
     /**
      * Get the message envelope.
      */
