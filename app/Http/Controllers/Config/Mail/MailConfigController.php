@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Config\Mail;
 
 use App\Http\Controllers\Controller;
+use App\Services\MailSendGridService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Response;
@@ -50,7 +51,7 @@ class MailConfigController extends Controller
      * Summary of testSendingMails
      * @param \Illuminate\Http\Request $request
      * @return string|\Illuminate\Http\JsonResponse
-     * @unautenticated
+     * @unauthenticated
      */
     public function testSendingMails(Request $request)
     {
@@ -62,11 +63,13 @@ class MailConfigController extends Controller
             return response()->json(['error' => 'Accès refusé'], 403);
         } 
 
-        Mail::raw('Ceci est un test SendGrid via SMTP', function ($message) {
-            $message->to('luctowanou@gmail.com')
-                    ->subject('Test SendGrid');
-        });
+        // Mail::raw('Ceci est un test SendGrid via SMTP', function ($message) {
+        //     $message->to('luctowanou@gmail.com')
+        //             ->subject('Test SendGrid');
+        // });
+            $service = new MailSendGridService();
+            return $service->send('luctowanou@gmail.com', 'Test SendGrid', 'Ceci est un test via API');
 
-        return 'Email envoyé !';
+        // return 'Email envoyé !';
         }
 }
