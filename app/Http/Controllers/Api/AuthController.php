@@ -19,6 +19,13 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
 
+    /**
+     * 
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     * @unauthenticated
+     */
     public function register(Request $request)
 {
     $request->validate([

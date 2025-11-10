@@ -16,6 +16,7 @@ use App\Http\Controllers\Config\Mail\MailConfigController;
 use App\Http\Middleware\EnsureMoisComptable;
 use App\Models\MoisComptable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
@@ -128,4 +129,6 @@ Route::prefix('regles-calcul/test')->group(function () {
 });
 
 //// General route Admin
-Route::get('/mail-config', [MailConfigController::class, 'show']);
+Route::get('/mail-config', [MailConfigController::class, 'showConfigMail']);
+
+Route::get('/test-mail', [MailConfigController::class, 'testSendingMails']); 
