@@ -6,6 +6,7 @@ use App\Models\Categorie;
 use App\Models\MoisComptable;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureMoisComptable
@@ -88,8 +89,72 @@ class EnsureMoisComptable
                 })
                 ->orderBy('annee', 'desc')
                 ->orderBy('mois', 'desc')
-                ->first();
-            // dd($dernierMois); 
+                ->first(); 
+            Log::info('Dernier moi: ' . $dernierMois);
+            
+            Log::info('Grande Categorie: ' . $dernierMois->categories()->whereNull('parent_id')->get() . "\nInit");
+
+            if ($dernierMois) {
+            foreach ($dernierMois->categories()->whereNull('parent_id')->get() as $categorieParent) {
+                // 🔹 Duplication de la catégorie principale (niveau 1)
+                $nouvelleCategorie = Categorie::create([
+                    'user_id'            => $user->id,
+                    'mois_comptable_id'  => $moisComptable->id,
+                    'nom'                => $categorieParent->nom,
+                    'budget_prevu'       => $categorieParent->budget_prevu,
+                    'description'        => $categorieParent->description,
+                    'nature'             => $categorieParent->nature,
+                    'niveau'             => 1,
+                    'calcule'            => $categorieParent->calcule,
+                    'statut_objet'       => 'actif',
+                ]);
+
+                // 🔹 Duplication des enfants (niveau 2)
+                Log::info('Categorie: ' . $categorieParent->enfants . "\nInit"); 
+                foreach ($categorieParent->enfants as $enfant) {
+                    $nouvelEnfant = Categorie::create([
+                        'user_id'            => $user->id,
+                        'mois_comptable_id'  => $moisComptable->id,
+                        'parent_id'          => $nouvelleCategorie->id,
+                        'nom'                => $enfant->nom,
+                        'budget_prevu'       => $enfant->budget_prevu,
+                        'description'        => $enfant->description,
+                        'nature'             => $enfant->nature,
+                        'niveau'             => 2,
+                        'calcule'            => $enfant->calcule,
+                        'statut_objet'       => 'actif',
+                    ]);
+                    Log::info('Dernier moi: ' . $dernierMois);
+
+                    // 🔹 Duplication des petits-enfants (niveau 3)
+                    Log::info('Sous Categorie: ' . $enfant->enfants . "\nInit");
+                    foreach ($enfant->enfants as $petitEnfant) {
+                        Categorie::create([
+                            'user_id'            => $user->id,
+                            'mois_comptable_id'  => $moisComptable->id,
+                            'parent_id'          => $nouvelEnfant->id,
+                            'nom'                => $petitEnfant->nom,
+                            'budget_prevu'       => $petitEnfant->budget_prevu,
+                            'description'        => $petitEnfant->description,
+                            'nature'             => $petitEnfant->nature,
+                            'niveau'             => 3,
+                            'calcule'            => $petitEnfant->calcule,
+                            'statut_objet'       => 'actif',
+                        ]);
+                        
+                    }
+
+                    // 🧮 TODO: copier les règles de calcul plus tard si applicable
+                }
+            }
+        }
+        }
+
+        return $moisComptable;
+    }
+}
+
+// dd($dernierMois); 
             
             // if ($dernierMois) {
             //     foreach ($dernierMois->tableaux as $tableau) {
@@ -129,58 +194,3 @@ class EnsureMoisComptable
             //         }
             //     }
             // }
-            if ($dernierMois) {
-            foreach ($dernierMois->categories()->whereNull('parent_id')->get() as $categorieParent) {
-                // 🔹 Duplication de la catégorie principale (niveau 1)
-                $nouvelleCategorie = Categorie::create([
-                    'user_id'            => $user->id,
-                    'mois_comptable_id'  => $moisComptable->id,
-                    'nom'                => $categorieParent->nom,
-                    'budget_prevu'       => $categorieParent->budget_prevu,
-                    'description'        => $categorieParent->description,
-                    'nature'             => $categorieParent->nature,
-                    'niveau'             => 1,
-                    'calcule'            => $categorieParent->calcule,
-                    'statut_objet'       => 'actif',
-                ]);
-
-                // 🔹 Duplication des enfants (niveau 2)
-                foreach ($categorieParent->children as $enfant) {
-                    $nouvelEnfant = Categorie::create([
-                        'user_id'            => $user->id,
-                        'mois_comptable_id'  => $moisComptable->id,
-                        'parent_id'          => $nouvelleCategorie->id,
-                        'nom'                => $enfant->nom,
-                        'budget_prevu'       => $enfant->budget_prevu,
-                        'description'        => $enfant->description,
-                        'nature'             => $enfant->nature,
-                        'niveau'             => 2,
-                        'calcule'            => $enfant->calcule,
-                        'statut_objet'       => 'actif',
-                    ]);
-
-                    // 🔹 Duplication des petits-enfants (niveau 3)
-                    foreach ($enfant->children as $petitEnfant) {
-                        Categorie::create([
-                            'user_id'            => $user->id,
-                            'mois_comptable_id'  => $moisComptable->id,
-                            'parent_id'          => $nouvelEnfant->id,
-                            'nom'                => $petitEnfant->nom,
-                            'budget_prevu'       => $petitEnfant->budget_prevu,
-                            'description'        => $petitEnfant->description,
-                            'nature'             => $petitEnfant->nature,
-                            'niveau'             => 3,
-                            'calcule'            => $petitEnfant->calcule,
-                            'statut_objet'       => 'actif',
-                        ]);
-                    }
-
-                    // 🧮 TODO: copier les règles de calcul plus tard si applicable
-                }
-            }
-        }
-        }
-
-        return $moisComptable;
-    }
-}
