@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('user_clients', function (Blueprint $table) {
             $table->id();
-             $table->unsignedBigInteger('user_id'); 
+            $table->unsignedBigInteger('user_id'); 
 
             $table->enum('type', ['beneficiaire', 'payeur']);
             // Type du client : "beneficiaire" (celui qui reçoit un paiement)

@@ -379,16 +379,10 @@ class MoisComptableController extends Controller
                                 ->where('annee', now()->year)
                                 ->where('mois', now()->locale('fr')->monthName)
                                 ->first();
-        // $last = MoisComptable::where('user_id', $user->id)
-        //                         ->orderBy('id', 'desc')                        
-        //                         ->first();
-        // dd([ 'mois_actif' => $moisActif,
-        //             'last' => $last,
-        //            'now' => now()->locale('fr')->monthName,] );
         if(!$moisActif) return response()->json('Empty', 422) ;
         return response()->json([
             'Mois comptable en cours' => $moisActif->mois,
-            'mois'                    => $moisActif->load('tableaux.variables.sousVariables', 'tableaux.variables.regleCalcul'),
+            'mois'                    => new MoisComptableRessource($moisActif),
         ], 200) ; 
 
 
