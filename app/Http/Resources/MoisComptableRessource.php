@@ -16,7 +16,7 @@ class MoisComptableRessource extends JsonResource
     {
         // return parent::toArray($request);
          return [
-            "mois" => [
+            // "mois" => [
                 "id" => $this->id,
                 "user_id" => $this->user_id,
                 "mois" => $this->mois,
@@ -36,7 +36,7 @@ class MoisComptableRessource extends JsonResource
                         ->where('niveau', 1)
                         ->get()
                 ),
-            ],
+            // ],
         ];
     }
 }
