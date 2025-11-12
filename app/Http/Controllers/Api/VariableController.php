@@ -457,85 +457,200 @@ class VariableController extends Controller
 
 
 
-    public function show($id)
-    {
+    // public function show($id)
+    // {
 
-        $user = Auth::user() ; 
+    //     $user = Auth::user() ; 
 
-        $variable = Variable::findOrFail($id);
+    //     $variable = Variable::findOrFail($id);
 
-        $tableau = Tableau::findOrFail($variable->tableau_id);
+    //     $tableau = Tableau::findOrFail($variable->tableau_id);
 
     
         
-        if ($tableau->user_id !== $user->id) {
-            abort(401, 'Non autorisé');
-        }   
+    //     if ($tableau->user_id !== $user->id) {
+    //         abort(401, 'Non autorisé');
+    //     }   
         
         
-        // $mois = MoisComptable::where('user_id', $user->id)
-        //                      ->where('id', $tableau->mois_comptable_id)
-        //                      ->first();
+    //     // $mois = MoisComptable::where('user_id', $user->id)
+    //     //                      ->where('id', $tableau->mois_comptable_id)
+    //     //                      ->first();
 
         
-        return Variable::with('sousVariables', 'operations', 'regleCalcul')->findOrFail($id);
+    //     return Variable::with('sousVariables', 'operations', 'regleCalcul')->findOrFail($id);
+    // }
+
+    // public function update(Request $request, $id)
+    // {
+    //     $request->validate([
+    //         'tableau_id' => 'nullable|exists:tableaux,id',
+    //         'nom' => 'nullable|string',
+    //         'type' => 'nullable|in:simple,sous-tableau',
+    //         'budget_prevu' => 'nullable|numeric',               
+    //         ]);
+    //     $variable = Variable::findOrFail($id);
+    //     $user = Auth::user() ; 
+
+
+    //     $tableau = Tableau::findOrFail($variable->tableau_id);
+
+        
+    //     // $mois = MoisComptable::where('user_id', $user->id)
+    //     //                      ->where('id', $tableau->mois_comptable_id)
+    //     //                      ->first();
+
+    //     if ($tableau->user_id !== $user->id) {
+    //         abort(401, 'Non autorisé');
+    //     }   
+        
+    //     if ($request->has('tableau_id')) $variable->tableau_id = $request->tableau_id;
+    //     if ($request->has('nom')) $variable->nom = $request->nom;
+    //     if ($request->has('type')) $variable->type = $request->type;
+    //     if ($request->has('budget_prevu')) $variable->budget_prevu = $request->budget_prevu;
+    //     $variable->save();
+
+    //     // $variable->update($request->only(['nom', 'budget_prevu', 'depense_reelle', 'tableau_id' , 'type'  ]));
+    //     return $variable;
+    // }
+
+
+    // public function destroy($id)
+    // {
+    //     try {
+    //         DB::beginTransaction();
+
+    //         $variable = Variable::findOrFail($id);
+    //         $user = Auth::user(); 
+
+    //         $tableau = Tableau::findOrFail($variable->tableau_id);
+
+    //         // Vérification autorisation
+    //         if ($tableau->user_id !== $user->id) {
+    //             DB::rollBack();
+    //             return response()->json(['message' => 'Non autorisé'], 401);
+    //         }
+
+    //         // Vérification sous-variables
+    //         if ($variable->sousVariables()->exists()) {
+    //             DB::rollBack();
+    //             return response()->json([
+    //                 'message' => 'Impossible de supprimer cette variable car elle contient des sous-variables. Supprimez-les d\'abord.'
+    //             ], 400);
+    //         }
+
+    //         // Vérification règle de calcul
+    //         $regleCalcul = new RegleCalculService();
+    //         $parente = $regleCalcul->variableRegleCalcul($variable);
+    //         if ($parente) {
+    //             DB::rollBack();
+    //             return response()->json([
+    //                 'message' => "Cette variable est déjà utilisée dans la règle de calcul de : " . $parente->nom
+    //             ], 400);
+    //         }
+
+    //         // Suppression
+    //         $variable->delete();
+
+    //         DB::commit();
+
+    //         return response()->json(['message' => 'Variable supprimée avec succès'], 200);
+
+    //     } catch (Exception $e) {
+    //         DB::rollBack();
+    //         return response()->json([
+    //             'message' => 'Erreur lors de la suppression de la variable',
+    //             'error'   => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
+    public function show($id)
+    {
+        $user = Auth::user();
+
+        // Charger la variable (niveau 2)
+        $variable = Categorie::findOrFail($id);
+
+        // Vérification que c’est bien une variable
+        if ($variable->niveau !== 2) {
+            abort(400, 'Cette catégorie n’est pas une variable');
+        }
+
+        // Vérification autorisation
+        $parent = Categorie::findOrFail($variable->parent_id);
+        if ($parent->user_id !== $user->id) {
+            abort(401, 'Non autorisé');
+        }
+
+        // Retour avec relations
+        return Categorie::with([
+            'enfants.regleCalcul',   // sous-variables
+            'operations',            // opérations liées
+            'regleCalcul'            // règle de calcul
+        ])->findOrFail($id);
     }
 
     public function update(Request $request, $id)
     {
         $request->validate([
-            'tableau_id' => 'nullable|exists:tableaux,id',
-            'nom' => 'nullable|string',
-            'type' => 'nullable|in:simple,sous-tableau',
-            'budget_prevu' => 'nullable|numeric',               
-            ]);
-        $variable = Variable::findOrFail($id);
-        $user = Auth::user() ; 
+            'parent_id'     => 'nullable|exists:categories,id', // tableau parent
+            'nom'           => 'nullable|string',
+            'budget_prevu'  => 'nullable|numeric',
+            'calcule'       => 'nullable|boolean',
+        ]);
 
+        $variable = Categorie::findOrFail($id);
+        $user = Auth::user();
 
-        $tableau = Tableau::findOrFail($variable->tableau_id);
+        // Vérification que c’est bien une variable
+        if ($variable->niveau !== 2) {
+            abort(400, 'Cette catégorie n’est pas une variable');
+        }
 
-        
-        // $mois = MoisComptable::where('user_id', $user->id)
-        //                      ->where('id', $tableau->mois_comptable_id)
-        //                      ->first();
-
-        if ($tableau->user_id !== $user->id) {
+        // Vérification autorisation
+        $parent = Categorie::findOrFail($variable->parent_id);
+        if ($parent->user_id !== $user->id) {
             abort(401, 'Non autorisé');
-        }   
-        
-        if ($request->has('tableau_id')) $variable->tableau_id = $request->tableau_id;
+        }
+
+        // Mise à jour
+        if ($request->has('parent_id')) $variable->parent_id = $request->parent_id;
         if ($request->has('nom')) $variable->nom = $request->nom;
-        if ($request->has('type')) $variable->type = $request->type;
         if ($request->has('budget_prevu')) $variable->budget_prevu = $request->budget_prevu;
+        if ($request->has('calcule')) $variable->calcule = $request->calcule;
+
         $variable->save();
 
-        // $variable->update($request->only(['nom', 'budget_prevu', 'depense_reelle', 'tableau_id' , 'type'  ]));
-        return $variable;
+        return $variable->load('regleCalcul', 'enfants');
     }
-
 
     public function destroy($id)
     {
         try {
             DB::beginTransaction();
 
-            $variable = Variable::findOrFail($id);
-            $user = Auth::user(); 
+            $variable = Categorie::findOrFail($id);
+            $user = Auth::user();
 
-            $tableau = Tableau::findOrFail($variable->tableau_id);
+            // Vérification que c’est bien une variable
+            if ($variable->niveau !== 2) {
+                DB::rollBack();
+                return response()->json(['message' => 'Cette catégorie n’est pas une variable'], 400);
+            }
 
             // Vérification autorisation
-            if ($tableau->user_id !== $user->id) {
+            $parent = Categorie::findOrFail($variable->parent_id);
+            if ($parent->user_id !== $user->id) {
                 DB::rollBack();
                 return response()->json(['message' => 'Non autorisé'], 401);
             }
 
             // Vérification sous-variables
-            if ($variable->sousVariables()->exists()) {
+            if ($variable->enfants()->exists()) {
                 DB::rollBack();
                 return response()->json([
-                    'message' => 'Impossible de supprimer cette variable car elle contient des sous-variables. Supprimez-les d\'abord.'
+                    'message' => 'Impossible de supprimer cette variable car elle contient des sous-variables. Supprimez-les d’abord.'
                 ], 400);
             }
 
@@ -556,7 +671,7 @@ class VariableController extends Controller
 
             return response()->json(['message' => 'Variable supprimée avec succès'], 200);
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => 'Erreur lors de la suppression de la variable',
@@ -564,6 +679,10 @@ class VariableController extends Controller
             ], 500);
         }
     }
+
+
+
+
     // public function destroy($id)
     // {
     //     $variable  = Variable::findOrFail($id);

@@ -13,6 +13,7 @@ use App\Services\ReglesCalculService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class SousVariableController extends Controller
 {
@@ -128,11 +129,11 @@ class SousVariableController extends Controller
         }
 
         // Vérifier si la variable a déjà une règle de calcul
-        // if ($variable->regleCalcul()->exists()) {
-        //     return response()->json([
-        //         'message' => 'Cette variable a sa propre règle de calcul, impossible d’ajouter une sous-variable'
-        //     ], 400);
-        // }
+        if ($variable->regleCalcul()->exists()) {
+            return response()->json([
+                'message' => 'Cette variable a sa propre règle de calcul, impossible d’ajouter une sous-variable'
+            ], 400);
+        }
 
         // Création de la sous-variable (niveau 3)
         $sousVariable = Categorie::create([
@@ -151,79 +152,193 @@ class SousVariableController extends Controller
 
 
     // 🔎 Afficher une sous-variable
-    public function show($id)
-    {
-        $user = Auth::user() ; 
+    // public function show($id)
+    // {
+    //     $user = Auth::user() ; 
 
-        $sv = SousVariable::findOrFail($id);
+    //     $sv = SousVariable::findOrFail($id);
     
         
-        if ($sv->user_id !== $user->id) {
-            abort(401, 'Non autorisé');
-        }  
-        return SousVariable::with('variable')->findOrFail($id);
-    }
+    //     if ($sv->user_id !== $user->id) {
+    //         abort(401, 'Non autorisé');
+    //     }  
+    //     return SousVariable::with('variable')->findOrFail($id);
+    // }
 
-    // ✏️ Mettre à jour une sous-variable
-    public function update(Request $request, $id)
-    {
-        $sousVariable = SousVariable::findOrFail($id);
+    // // ✏️ Mettre à jour une sous-variable
+    // public function update(Request $request, $id)
+    // {
+    //     $sousVariable = SousVariable::findOrFail($id);
 
-        $validated = $request->validate([
-            'variable_id' => 'nullable|exists:variables,id',
-            'nom' => 'nullable|string',
-            'budget_prevu' => 'nullable|numeric',
-            // 'regle.expression' => 'nullable|string',
-        ]);
+    //     $validated = $request->validate([
+    //         'variable_id' => 'nullable|exists:variables,id',
+    //         'nom' => 'nullable|string',
+    //         'budget_prevu' => 'nullable|numeric',
+    //         // 'regle.expression' => 'nullable|string',
+    //     ]);
         
 
-        $user = Auth::user();
+    //     $user = Auth::user();
 
-        if($sousVariable->user_id !== $user->id){
-                abort(401, 'Non autorisé, Lavariable specifié n\'appartient pas à cet utilisateur');
-            }
-        if ($validated['variable_id']) {
-            $var = Variable::findOrFail($validated['variable_id']);
-            if($var->user_id !== $user->id){
-                abort(401, 'Non autorisé, Lavariable specifié n\'appartient pas à cet utilisateur');
-            }
-            if(RegleCalcul::where('variable_id', $var->id)
-                           ->exists()){
-                        return response()->json('Cette variable a sa propre regle de calcul', 400);
-                    }
-        } 
+    //     if($sousVariable->user_id !== $user->id){
+    //             abort(401, 'Non autorisé, Lavariable specifié n\'appartient pas à cet utilisateur');
+    //         }
+    //     if ($validated['variable_id']) {
+    //         $var = Variable::findOrFail($validated['variable_id']);
+    //         if($var->user_id !== $user->id){
+    //             abort(401, 'Non autorisé, Lavariable specifié n\'appartient pas à cet utilisateur');
+    //         }
+    //         if(RegleCalcul::where('variable_id', $var->id)
+    //                        ->exists()){
+    //                     return response()->json('Cette variable a sa propre regle de calcul', 400);
+    //                 }
+    //     } 
 
 
 
-        $sousVariable->update([
-            'variable_id' => $validated['variable_id'] ?? null,
-            'nom' => $validated['nom'] ?? $sousVariable->nom,
-            'budget_prevu' => $validated['budget_prevu'] ?? $sousVariable->budget_prevu,
-            // 'regle_calcul' => $validated['regle']['expression'] ?? $sousVariable->regle_calcul,
-        ]);
+    //     $sousVariable->update([
+    //         'variable_id' => $validated['variable_id'] ?? null,
+    //         'nom' => $validated['nom'] ?? $sousVariable->nom,
+    //         'budget_prevu' => $validated['budget_prevu'] ?? $sousVariable->budget_prevu,
+    //         // 'regle_calcul' => $validated['regle']['expression'] ?? $sousVariable->regle_calcul,
+    //     ]);
 
-        return response()->json($sousVariable);
-    }
+    //     return response()->json($sousVariable);
+    // }
 
-    // Supprimer une sous-variable
-    public function destroy($id)
+    // // Supprimer une sous-variable
+    // public function destroy($id)
+    // {
+    //     $sousVariable  = SousVariable::findOrFail($id);
+    //     // $this->authorize('delete', $sousVariable);
+    //     $user = Auth::user();
+
+    //     if($sousVariable->user_id !== $user->id){
+    //             abort(401, 'Non autorisé, Lavariable specifié n\'appartient pas à cet utilisateur');
+    //         }
+    //     $regleCalcul = new ReglesCalculService();
+    //     $sousParente = $regleCalcul->sousVariableRegleCalcul($sousVariable );
+
+    //     $Parente = Variable::where('id', $sousParente)->first();
+    //     if ($Parente) {
+    //         throw new Exception("Cette sous-variable est déjà utilisée dans la règle de : " . $Parente->nom);
+    //     }
+
+    //     SousVariable::destroy($id);
+    //     return response()->json(['message' => 'Sous-variable supprimée avec succès']);
+    // }
+
+    public function show($id)
     {
-        $sousVariable  = SousVariable::findOrFail($id);
-        // $this->authorize('delete', $sousVariable);
         $user = Auth::user();
 
-        if($sousVariable->user_id !== $user->id){
-                abort(401, 'Non autorisé, Lavariable specifié n\'appartient pas à cet utilisateur');
-            }
-        $regleCalcul = new ReglesCalculService();
-        $sousParente = $regleCalcul->sousVariableRegleCalcul($sousVariable );
+        // Charger la sous-variable
+        $sousVariable = Categorie::findOrFail($id);
 
-        $Parente = Variable::where('id', $sousParente)->first();
-        if ($Parente) {
-            throw new Exception("Cette sous-variable est déjà utilisée dans la règle de : " . $Parente->nom);
+        // Vérification que c’est bien une sous-variable
+        if ($sousVariable->niveau !== 3) {
+            abort(400, 'Cette catégorie n’est pas une sous-variable');
         }
 
-        SousVariable::destroy($id);
-        return response()->json(['message' => 'Sous-variable supprimée avec succès']);
+        // Vérification autorisation
+        if ($sousVariable->user_id !== $user->id) {
+            abort(401, 'Non autorisé');
+        }
+
+        // Retour avec la variable parent
+        return Categorie::with('parent.regleCalcul')->findOrFail($id);
     }
+
+    public function update(Request $request, $id)
+    {
+        $sousVariable = Categorie::findOrFail($id);
+
+        $validated = $request->validate([
+            'parent_id'     => 'nullable|exists:categories,id', // variable parent
+            'nom'           => 'nullable|string',
+            'budget_prevu'  => 'nullable|numeric',
+        ]);
+
+        $user = Auth::user();
+
+        // Vérification que c’est bien une sous-variable
+        if ($sousVariable->niveau !== 3) {
+            abort(400, 'Cette catégorie n’est pas une sous-variable');
+        }
+
+        // Vérification autorisation
+        if ($sousVariable->user_id !== $user->id) {
+            abort(401, 'Non autorisé');
+        }
+
+        // Vérification du parent si fourni
+        if (!empty($validated['parent_id'])) {
+            $variable = Categorie::findOrFail($validated['parent_id']);
+            if ($variable->user_id !== $user->id || $variable->niveau !== 2) {
+                abort(401, 'Non autorisé ou parent invalide');
+            }
+
+            // Empêcher la création si la variable a déjà une règle de calcul
+            if ($variable->regleCalcul()->exists()) {
+                return response()->json('Cette variable a sa propre règle de calcul', 400);
+            }
+        }
+
+        // Mise à jour
+        $sousVariable->update([
+            'parent_id'     => $validated['parent_id'] ?? $sousVariable->parent_id,
+            'nom'           => $validated['nom'] ?? $sousVariable->nom,
+            'budget_prevu'  => $validated['budget_prevu'] ?? $sousVariable->budget_prevu,
+        ]);
+
+        return response()->json($sousVariable->load('parent'));
+    }
+
+    public function destroy($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $sousVariable = Categorie::findOrFail($id);
+            $user = Auth::user();
+
+            // Vérification que c’est bien une sous-variable
+            if ($sousVariable->niveau !== 3) {
+                DB::rollBack();
+                return response()->json(['message' => 'Cette catégorie n’est pas une sous-variable'], 400);
+            }
+
+            // Vérification autorisation
+            if ($sousVariable->user_id !== $user->id) {
+                DB::rollBack();
+                return response()->json(['message' => 'Non autorisé'], 401);
+            }
+
+            // Vérification règle de calcul
+            // $regleCalcul = new ReglesCalculService();
+            // $parente = $regleCalcul->sousVariableRegleCalcul($sousVariable);
+
+            // if ($parente) {
+            //     DB::rollBack();
+            //     return response()->json([
+            //         'message' => "Cette sous-variable est déjà utilisée dans la règle de calcul de : " . $parente->nom
+            //     ], 400);
+            // }
+
+            // Suppression
+            $sousVariable->delete();
+
+            DB::commit();
+
+            return response()->json(['message' => 'Sous-variable supprimée avec succès'], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Erreur lors de la suppression de la sous-variable',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
