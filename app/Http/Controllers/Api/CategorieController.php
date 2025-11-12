@@ -17,11 +17,48 @@ class CategorieController extends Controller
      * Categories of user
      * @param \Illuminate\Http\Request $request
      */
+    // public function index(Request $request)
+    // {
+    //     $user = Auth::user();
+    //     // if ( $user ) return $user ->id;
+    //     if ( !$user ) return response()->json('user null');
+    //     // 🧭 On récupère le mois comptable actif
+    //     $moisId = $request->query('mois_id') ?? $user->moisComptables()->latest()->first()?->id;
+
+    //     if (!$moisId) {
+    //         return response()->json(['message' => 'Aucun mois comptable trouvé.'], 404);
+    //     }
+
+    //     // 🎯 Catégories de l’utilisateur pour ce mois
+    //     $categoriesUser = Categorie::where('mois_comptable_id', $moisId)
+    //         ->where('user_id', $user->id)
+    //         ->whereNull('parent_id')
+    //         ->with('enfants')
+    //         ->get();
+
+    //     // 🌍 Catégories templates publiques (exclure celles déjà présentes chez l'utilisateur)
+    //     $userCategoryNames = $categoriesUser->pluck('nom')->map(fn($n) => strtolower($n))->toArray();
+
+    //     $categoriesTemplates = Categorie::where('is_template', true)
+    //         ->where('visibilite', 'public')
+    //         ->whereNull('parent_id')
+    //         ->whereNotIn('nom', $userCategoryNames) // 🚫 évite les doublons
+    //         ->with('enfants')
+    //         ->get();
+
+    //     // 🧩 Fusion des deux collections sans doublon
+    //     $categories = $categoriesUser->merge($categoriesTemplates)->unique('nom')->values();
+
+    //     // 🔁 Retour via la ressource
+    //     return CategorieResource::collection($categories);
+    // }
     public function index(Request $request)
     {
         $user = Auth::user();
-        // if ( $user ) return $user ->id;
-        if ( !$user ) return response()->json('user null');
+        if (!$user) {
+            return response()->json('user null');
+        }
+
         // 🧭 On récupère le mois comptable actif
         $moisId = $request->query('mois_id') ?? $user->moisComptables()->latest()->first()?->id;
 
@@ -29,11 +66,12 @@ class CategorieController extends Controller
             return response()->json(['message' => 'Aucun mois comptable trouvé.'], 404);
         }
 
-        // 🎯 Catégories de l’utilisateur pour ce mois
+        // 🎯 Catégories de l’utilisateur (racines avec enfants)
         $categoriesUser = Categorie::where('mois_comptable_id', $moisId)
             ->where('user_id', $user->id)
             ->whereNull('parent_id')
-            ->with('enfants')
+            ->whereHas('enfants') // ✅ ne garde que celles qui ont au moins un enfant
+            ->with('enfants.enfants') // chargement récursif
             ->get();
 
         // 🌍 Catégories templates publiques (exclure celles déjà présentes chez l'utilisateur)
@@ -42,12 +80,15 @@ class CategorieController extends Controller
         $categoriesTemplates = Categorie::where('is_template', true)
             ->where('visibilite', 'public')
             ->whereNull('parent_id')
-            ->whereNotIn('nom', $userCategoryNames) // 🚫 évite les doublons
-            ->with('enfants')
+            ->whereHas('enfants') // ✅ même filtrage pour les templates
+            ->whereNotIn(DB::raw('LOWER(nom)'), $userCategoryNames) // évite les doublons insensibles à la casse
+            ->with('enfants.enfants')
             ->get();
 
-        // 🧩 Fusion des deux collections sans doublon
-        $categories = $categoriesUser->merge($categoriesTemplates)->unique('nom')->values();
+        // 🧩 Fusion sans doublon
+        $categories = $categoriesUser->merge($categoriesTemplates)
+            ->unique(fn($cat) => strtolower($cat->nom))
+            ->values();
 
         // 🔁 Retour via la ressource
         return CategorieResource::collection($categories);
