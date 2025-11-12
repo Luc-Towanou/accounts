@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Categorie;
 use App\Models\RegleCalcul;
 use App\Models\SousVariable;
 use App\Models\Tableau;
@@ -73,41 +74,81 @@ class SousVariableController extends Controller
     }
 
     // ➕ Créer une sous-variable
+    // public function store(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'variable_id' => 'nullable|exists:variables,id',
+    //         'nom' => 'required|string',
+    //         'budget_prevu' => 'nullable|numeric',
+    //         // 'calcule' => 'boolean',            
+    //         // 'regle.expression' => 'nullable|string',
+    //     ]);
+
+    //     $user = Auth::user();
+    //     if ($request->has('variable_id')) {
+    //         $var = Variable::findOrFail($validated['variable_id']);
+    //         if($var->user_id !== $user->id){
+    //             abort(401, 'Non autorisé, Lavariable specifié n\'appartient pas à cet utilisateur');
+    //         }
+    //         if(RegleCalcul::where('variable_id', $var->id)
+    //                        ->exists()){
+    //                     return response()->json('Cette variable a sa propre regle de calcul', 400);
+    //                 }
+    //     } 
+
+    //     $sousVariable = SousVariable::create([
+    //         'user_id'   => $user->id,
+    //         'variable_id' => $validated['variable_id'] ?? null,
+    //         'nom' => $validated['nom'],
+    //         'budget_prevu' => $validated['budget_prevu'] ?? null,
+    //         // 'regle_calcul' => $validated['regle']['expression'] ?? null,
+    //     ]);
+    //     // if ($sousVariable->calcule){
+    //     //             return response()->json(['message' => 'Sous-variable calculés non encore pris en charge'], 400);
+    //     // }
+
+    //     return response()->json($sousVariable, 201);
+    // } 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'variable_id' => 'nullable|exists:variables,id',
+            'variable_id' => 'required|exists:categories,id', // le parent (niveau 2)
             'nom' => 'required|string',
             'budget_prevu' => 'nullable|numeric',
-            // 'calcule' => 'boolean',            
+            // 'calcule' => 'boolean',
             // 'regle.expression' => 'nullable|string',
         ]);
 
         $user = Auth::user();
-        if ($request->has('variable_id')) {
-            $var = Variable::findOrFail($validated['variable_id']);
-            if($var->user_id !== $user->id){
-                abort(401, 'Non autorisé, Lavariable specifié n\'appartient pas à cet utilisateur');
-            }
-            if(RegleCalcul::where('variable_id', $var->id)
-                           ->exists()){
-                        return response()->json('Cette variable a sa propre regle de calcul', 400);
-                    }
-        } 
 
-        $sousVariable = SousVariable::create([
-            'user_id'   => $user->id,
-            'variable_id' => $validated['variable_id'] ?? null,
-            'nom' => $validated['nom'],
-            'budget_prevu' => $validated['budget_prevu'] ?? null,
-            // 'regle_calcul' => $validated['regle']['expression'] ?? null,
-        ]);
-        // if ($sousVariable->calcule){
-        //             return response()->json(['message' => 'Sous-variable calculés non encore pris en charge'], 400);
+        // Vérification que le parent est bien une variable (niveau 2)
+        $variable = Categorie::findOrFail($validated['variable_id']);
+        if ($variable->user_id !== $user->id || $variable->niveau !== 2) {
+            abort(401, 'Non autorisé ou parent invalide');
+        }
+
+        // Vérifier si la variable a déjà une règle de calcul
+        // if ($variable->regleCalcul()->exists()) {
+        //     return response()->json([
+        //         'message' => 'Cette variable a sa propre règle de calcul, impossible d’ajouter une sous-variable'
+        //     ], 400);
         // }
 
+        // Création de la sous-variable (niveau 3)
+        $sousVariable = Categorie::create([
+            'user_id'          => $user->id,
+            'mois_comptable_id'=> $variable->mois_comptable_id,
+            'parent_id'        => $variable->id,
+            'nom'              => $validated['nom'],
+            'budget_prevu'     => $validated['budget_prevu'] ?? null,
+            'calcule'          => false, // par défaut non calculée
+            'niveau'           => 3,
+            'nature'           => $variable->nature, // hérite de la nature du parent
+        ]);
+
         return response()->json($sousVariable, 201);
-    } 
+    }
+
 
     // 🔎 Afficher une sous-variable
     public function show($id)

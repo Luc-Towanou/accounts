@@ -34,6 +34,10 @@ class Operation extends Model
     {
         return $this->variable ?? $this->sousVariable;
     }
-
+    
+    public function categorie()
+    {
+        return $this->belongsTo(Categorie::class, 'categorie_id');
+    }
     
 }
