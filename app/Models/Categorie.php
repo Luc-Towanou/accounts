@@ -75,7 +75,7 @@ class Categorie extends Model
     // 🧮 Règle de calcul associée
     public function regleCalcul()
     {
-        return $this->hasOne(RegleCalcul::class, 'category_id');
+        return $this->hasOne(RegleCalcul::class, 'categorie_id');
     }
 
     /**

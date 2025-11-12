@@ -16,6 +16,7 @@ class RegleCalcul extends Model
         'expression',
         'sous_variable_id',
         'statut_objet',
+        'categorie_id'
     ];
 
     public function variable()
@@ -25,5 +26,9 @@ class RegleCalcul extends Model
     public function sousVariables()
     {
         return $this->belongsTo(SousVariable::class);
+    }
+    public function categorie()
+    {
+        return $this->belongsTo(Categorie::class);
     }
 }

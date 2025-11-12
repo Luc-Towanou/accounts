@@ -128,11 +128,11 @@ class SousVariableController extends Controller
         }
 
         // Vérifier si la variable a déjà une règle de calcul
-        // if ($variable->regleCalcul()->exists()) {
-        //     return response()->json([
-        //         'message' => 'Cette variable a sa propre règle de calcul, impossible d’ajouter une sous-variable'
-        //     ], 400);
-        // }
+        if ($variable->regleCalcul()->exists()) {
+            return response()->json([
+                'message' => 'Cette variable a sa propre règle de calcul, impossible d’ajouter une sous-variable'
+            ], 400);
+        }
 
         // Création de la sous-variable (niveau 3)
         $sousVariable = Categorie::create([
