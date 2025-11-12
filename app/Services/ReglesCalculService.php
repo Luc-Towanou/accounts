@@ -97,6 +97,80 @@ class ReglesCalculService
     /**
      * Valide une expression avant enregistrement
      */
+
+    /**
+     * Analyse une règle de calcul : retourne la cible et toutes les sous-variables utilisées
+     */
+    public function analyser(RegleCalcul $regle): array
+    {
+        preg_match_all('/([a-zA-Z_][\w]*)\.(\d+)/', $regle->expression, $matches, PREG_SET_ORDER);
+
+        $ids = [];
+        foreach ($matches as $match) {
+            $ids[] = (int) $match[2];
+        }
+
+        $ids = array_unique($ids);
+
+        return [
+            'variable_cible'           => $regle->variable_id,
+            'sous_variables_utilisées' => $ids
+        ];
+    }
+
+
+    /**
+     * Vérifie si une variable est déjà utilisée dans une autre règle
+     */
+    
+
+    /**
+     * Vérifie si une sous-variable est déjà utilisée dans une autre règle
+     */
+    public function sousVariableRegleCalcul(SousVariable $sousVariable): ?int
+    {
+        $userId = $sousVariable->user_id;
+        $id = $sousVariable->id;
+
+        $regles = RegleCalcul::whereHas('variable', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })->get();
+
+        foreach ($regles as $regle) {
+            if (preg_match("/\b{$id}\b/", $regle->expression)) {
+                return $regle->variable_id;
+            }
+        }
+
+        return null;
+    }
+
+    public function getDependances(string $expression): array
+    {
+        preg_match_all('/[a-zA-Z_][\w]*\.(\d+)/', $expression, $matches);
+        $ids = array_map('intval', $matches[1] ?? []);
+        return array_unique($ids);
+    }
+
+    // public function variableRegleCalcul(Variable $variable): ?Variable
+    // {
+    //     $userId = $variable->user_id;
+    //     $cle = "{$variable->tableau->nom}.{$variable->nom}";
+    //     $userId = $variable->tableau->moisComptable->user_id;
+
+    //     $regles = RegleCalcul::whereHas('variable.tableau.moisComptable', function ($q) use ($userId) {
+    //         $q->where('user_id', $userId);
+    //     })->with('variable.tableau')->get();
+
+    //     foreach ($regles as $regle) {
+    //         if (preg_match("/\b" . preg_quote($cle) . "\b/", $regle->expression)) {
+    //             return $regle->variable;
+    //         }
+    //     }
+
+    //     return null;
+    // }
+    
     // public function validerExpression(string $expression): void
     // {
     //     $userId = Auth::id();
@@ -127,75 +201,4 @@ class ReglesCalculService
     //         }
     //     }
     // }
-
-    /**
-     * Analyse une règle de calcul : retourne la cible et toutes les sous-variables utilisées
-     */
-    public function analyser(RegleCalcul $regle): array
-    {
-        preg_match_all('/([a-zA-Z_][\w]*)\.(\d+)/', $regle->expression, $matches, PREG_SET_ORDER);
-
-        $ids = [];
-        foreach ($matches as $match) {
-            $ids[] = (int) $match[2];
-        }
-
-        $ids = array_unique($ids);
-
-        return [
-            'variable_cible'           => $regle->variable_id,
-            'sous_variables_utilisées' => $ids
-        ];
-    }
-
-
-    /**
-     * Vérifie si une variable est déjà utilisée dans une autre règle
-     */
-    // public function variableRegleCalcul(Variable $variable): ?Variable
-    // {
-    //     $userId = $variable->user_id;
-    //     $cle = "{$variable->tableau->nom}.{$variable->nom}";
-    //     $userId = $variable->tableau->moisComptable->user_id;
-
-    //     $regles = RegleCalcul::whereHas('variable.tableau.moisComptable', function ($q) use ($userId) {
-    //         $q->where('user_id', $userId);
-    //     })->with('variable.tableau')->get();
-
-    //     foreach ($regles as $regle) {
-    //         if (preg_match("/\b" . preg_quote($cle) . "\b/", $regle->expression)) {
-    //             return $regle->variable;
-    //         }
-    //     }
-
-    //     return null;
-    // }
-
-    /**
-     * Vérifie si une sous-variable est déjà utilisée dans une autre règle
-     */
-    public function sousVariableRegleCalcul(SousVariable $sousVariable): ?int
-    {
-        $userId = $sousVariable->user_id;
-        $id = $sousVariable->id;
-
-        $regles = RegleCalcul::whereHas('variable', function ($q) use ($userId) {
-                $q->where('user_id', $userId);
-            })->get();
-
-        foreach ($regles as $regle) {
-            if (preg_match("/\b{$id}\b/", $regle->expression)) {
-                return $regle->variable_id;
-            }
-        }
-
-        return null;
-    }
-
-    public function getDependances(string $expression): array
-    {
-        preg_match_all('/[a-zA-Z_][\w]*\.(\d+)/', $expression, $matches);
-        $ids = array_map('intval', $matches[1] ?? []);
-        return array_unique($ids);
-    }
 }

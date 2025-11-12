@@ -61,64 +61,6 @@ class RegleCalculService
 }
  
 
-// public function evaluer(string $expression): float
-// {
-//     $original = $expression;
-//     $expression = ltrim($expression, '=');
-//     Log::debug("Expression originale : {$original}");
-
-//     // Remplacer les sous-variables : tableau.variable.sousVariable
-//     $expression = preg_replace_callback('/([a-zA-Z_][\w])\.([a-zA-Z_][\w])\.([a-zA-Z_][\w]*)/', function ($matches) {
-//         [$full, $nomTableau, $nomVariable, $nomSousVariable] = $matches;
-
-//         $sousVariable = SousVariable::whereHas('variable', function ($q) use ($nomVariable, $nomTableau) {
-//             $q->where('nom', $nomVariable)
-//               ->whereHas('tableau', function ($q2) use ($nomTableau) {
-//                   $q2->where('nom', $nomTableau);
-//               });
-//         })->where('nom', $nomSousVariable)->first();
-
-//         if (!$sousVariable) {
-//             Log::warning("Sous-variable non trouvée : {$nomTableau}.{$nomVariable}.{$nomSousVariable}");
-//             return 0;
-//         }
-
-//         return $sousVariable->depense_reelle ?? 0;
-//     }, $expression);
-
-//     // Remplacer les variables simples : tableau.variable
-//     $expression = preg_replace_callback('/([a-zA-Z_][\w])\.([a-zA-Z_][\w])/', function ($matches) {
-//         [$full, $nomTableau, $nomVariable] = $matches;
-
-//         $variable = Variable::where('nom', $nomVariable)
-//             ->whereHas('tableau', function ($q) use ($nomTableau) {
-//                 $q->where('nom', $nomTableau);
-//             })->first();
-
-//         if (!$variable) {
-//             Log::warning("Variable non trouvée : {$nomTableau}.{$nomVariable}");
-//             return 0;
-//         }
-
-//         return $variable->depense_reelle ?? 0;
-//     }, $expression);
-
-//     Log::debug("Expression après remplacement : {$expression}");
-
-//     // Sécurité : uniquement des chiffres et opérateurs mathématiques
-//     if (!preg_match('/^[0-9\+\-\*\/\.\(\) ]+$/', $expression)) {
-//         throw new Exception("Expression invalide ou non sécurisée : {$expression}");
-//     }
-
-//     try {
-//         $result = eval("return {$expression};");
-//         Log::debug("Résultat de l'expression : {$result}");
-//         return floatval($result);
-//     } catch (\Throwable $e) {
-//         Log::error("Erreur d\'évaluation de l\'expression '{$expression}': " . $e->getMessage());
-//         throw new Exception("Erreur d\'évaluation : " . $e->getMessage());
-//     }
-// }
 
 public function validerExpression(string $expression): void
 {
@@ -298,5 +240,66 @@ public function sousVariableRegleCalcul(SousVariable $sousVariable): ?Variable
 
     //     // Évaluer l'expression mathématique (⚠️ sécurisée)
     //     return eval("return {$expression};");
+    // }
+
+
+        
+    // public function evaluer(string $expression): float
+    // {
+    //     $original = $expression;
+    //     $expression = ltrim($expression, '=');
+    //     Log::debug("Expression originale : {$original}");
+
+    //     // Remplacer les sous-variables : tableau.variable.sousVariable
+    //     $expression = preg_replace_callback('/([a-zA-Z_][\w])\.([a-zA-Z_][\w])\.([a-zA-Z_][\w]*)/', function ($matches) {
+    //         [$full, $nomTableau, $nomVariable, $nomSousVariable] = $matches;
+
+    //         $sousVariable = SousVariable::whereHas('variable', function ($q) use ($nomVariable, $nomTableau) {
+    //             $q->where('nom', $nomVariable)
+    //               ->whereHas('tableau', function ($q2) use ($nomTableau) {
+    //                   $q2->where('nom', $nomTableau);
+    //               });
+    //         })->where('nom', $nomSousVariable)->first();
+
+    //         if (!$sousVariable) {
+    //             Log::warning("Sous-variable non trouvée : {$nomTableau}.{$nomVariable}.{$nomSousVariable}");
+    //             return 0;
+    //         }
+
+    //         return $sousVariable->depense_reelle ?? 0;
+    //     }, $expression);
+
+    //     // Remplacer les variables simples : tableau.variable
+    //     $expression = preg_replace_callback('/([a-zA-Z_][\w])\.([a-zA-Z_][\w])/', function ($matches) {
+    //         [$full, $nomTableau, $nomVariable] = $matches;
+
+    //         $variable = Variable::where('nom', $nomVariable)
+    //             ->whereHas('tableau', function ($q) use ($nomTableau) {
+    //                 $q->where('nom', $nomTableau);
+    //             })->first();
+
+    //         if (!$variable) {
+    //             Log::warning("Variable non trouvée : {$nomTableau}.{$nomVariable}");
+    //             return 0;
+    //         }
+
+    //         return $variable->depense_reelle ?? 0;
+    //     }, $expression);
+
+    //     Log::debug("Expression après remplacement : {$expression}");
+
+    //     // Sécurité : uniquement des chiffres et opérateurs mathématiques
+    //     if (!preg_match('/^[0-9\+\-\*\/\.\(\) ]+$/', $expression)) {
+    //         throw new Exception("Expression invalide ou non sécurisée : {$expression}");
+    //     }
+
+    //     try {
+    //         $result = eval("return {$expression};");
+    //         Log::debug("Résultat de l'expression : {$result}");
+    //         return floatval($result);
+    //     } catch (\Throwable $e) {
+    //         Log::error("Erreur d\'évaluation de l\'expression '{$expression}': " . $e->getMessage());
+    //         throw new Exception("Erreur d\'évaluation : " . $e->getMessage());
+    //     }
     // }
 }
