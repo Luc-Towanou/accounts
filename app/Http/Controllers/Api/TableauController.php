@@ -240,136 +240,136 @@ class TableauController extends Controller
     //     ], 422);
     // }
     // }
-    // public function store(Request $request, ReglesCalculService $validator)
-    // {
-    //     $data = $request->validate([
-    //         'mois_comptable_id' => 'required|exists:mois_comptables,id',
-    //         'nom' => 'required|string',
-    //         'budget_prevu' => 'nullable|numeric',
-    //         'nature' => 'in:entree,sortie',
+    public function store(Request $request, ReglesCalculService $validator)
+    {
+        $data = $request->validate([
+            'mois_comptable_id' => 'required|exists:mois_comptables,id',
+            'nom' => 'required|string',
+            'budget_prevu' => 'nullable|numeric',
+            'nature' => 'in:entree,sortie',
 
-    //         'variables' => 'nullable|array',
-    //         'variables.*.nom' => 'required|string',
-    //         'variables.*.type' => 'required|in:simple,sous-tableau',
-    //         'variables.*.budget_prevu' => 'nullable|numeric',
-    //         'variables.*.calcule' => 'boolean',            
-    //         'variables.*.regle.expression' => 'nullable|string',
+            'variables' => 'nullable|array',
+            'variables.*.nom' => 'required|string',
+            'variables.*.type' => 'required|in:simple,sous-tableau',
+            'variables.*.budget_prevu' => 'nullable|numeric',
+            'variables.*.calcule' => 'boolean',            
+            'variables.*.regle.expression' => 'nullable|string',
 
-    //         'variables.*.sous_variables' => 'nullable|array',
-    //         'variables.*.sous_variables.*.nom' => 'required|string',
-    //         'variables.*.sous_variables.*.budget_prevu' => 'nullable|numeric',
-    //         // 'variables.*.sous_variables.*.calcule' => 'boolean',            
-    //         'variables.*.sous_variables.*.regle.expression' => 'nullable|string',
-    //     ]);
+            'variables.*.sous_variables' => 'nullable|array',
+            'variables.*.sous_variables.*.nom' => 'required|string',
+            'variables.*.sous_variables.*.budget_prevu' => 'nullable|numeric',
+            // 'variables.*.sous_variables.*.calcule' => 'boolean',            
+            'variables.*.sous_variables.*.regle.expression' => 'nullable|string',
+        ]);
 
-    //     $user = Auth::user();
+        $user = Auth::user();
 
-    //     // Vérification d’appartenance du mois à l’utilisateur
-    //     $mois = MoisComptable::whereKey($data['mois_comptable_id'])
-    //         ->where('user_id', $user->id)
-    //         ->firstOrFail();
+        // Vérification d’appartenance du mois à l’utilisateur
+        $mois = MoisComptable::whereKey($data['mois_comptable_id'])
+            ->where('user_id', $user->id)
+            ->firstOrFail();
 
-    //     // Vérifier si la grande catégorie existe déjà
-    //     if (Categorie::where('mois_comptable_id', $mois->id)
-    //         ->where('nom', $data['nom'])
-    //         ->where('niveau', 1)
-    //         ->exists()) {
-    //         return response()->json([
-    //             'message' => 'Une grande-catégorie portant ce nom existe déjà pour ce mois comptable',
-    //         ], 422);
-    //     }
+        // Vérifier si la grande catégorie existe déjà
+        if (Categorie::where('mois_comptable_id', $mois->id)
+            ->where('nom', $data['nom'])
+            ->where('niveau', 1)
+            ->exists()) {
+            return response()->json([
+                'message' => 'Une grande-catégorie portant ce nom existe déjà pour ce mois comptable',
+            ], 422);
+        }
 
-    //     try {
-    //         $categorie = DB::transaction(function () use ($data, $validator, $user) {
+        try {
+            $categorie = DB::transaction(function () use ($data, $validator, $user) {
 
-    //             // 1️⃣ Validation des règles de calcul avant toute insertion
-    //             foreach ($data['variables'] ?? [] as $vData) {
-    //                 if (($vData['calcule'] ?? false) && isset($vData['regle']['expression'])) {
-    //                     $validator->validerExpression($vData['regle']['expression']);
-    //                 }
+                // 1️⃣ Validation des règles de calcul avant toute insertion
+                foreach ($data['variables'] ?? [] as $vData) {
+                    if (($vData['calcule'] ?? false) && isset($vData['regle']['expression'])) {
+                        $validator->validerExpression($vData['regle']['expression']);
+                    }
 
-    //                 // if ($vData['type'] === 'sous-tableau') { 
-    //                     // foreach ($vData['sous_variables'] ?? [] as $svData) {
-    //                     //     if (($svData['calcule'] ?? false) && isset($svData['regle']['expression'])) {
-    //                     //         $validator->validerExpression($svData['regle']['expression']);
-    //                     //     }
-    //                     // }
-    //                 // } 
-    //             }
+                    // if ($vData['type'] === 'sous-tableau') { 
+                        // foreach ($vData['sous_variables'] ?? [] as $svData) {
+                        //     if (($svData['calcule'] ?? false) && isset($svData['regle']['expression'])) {
+                        //         $validator->validerExpression($svData['regle']['expression']);
+                        //     }
+                        // }
+                    // } 
+                }
 
-    //             // 2️⃣ Création de la catégorie principale (niveau 1)
-    //             $categorie = Categorie::create([
-    //                 'user_id' => $user->id,
-    //                 'mois_comptable_id' => $data['mois_comptable_id'],
-    //                 'nom' => $data['nom'],
-    //                 'budget_prevu' => $data['budget_prevu'] ?? null,
-    //                 'nature' => $data['nature'],
-    //                 'niveau' => 1,
-    //             ]);
+                // 2️⃣ Création de la catégorie principale (niveau 1)
+                $categorie = Categorie::create([
+                    'user_id' => $user->id,
+                    'mois_comptable_id' => $data['mois_comptable_id'],
+                    'nom' => $data['nom'],
+                    'budget_prevu' => $data['budget_prevu'] ?? null,
+                    'nature' => $data['nature'],
+                    'niveau' => 1,
+                ]);
 
-    //             // 3️⃣ Création des sous-catégories (ex-variables)
-    //             foreach ($data['variables'] ?? [] as $vData) {
-    //                 $variable = Categorie::create([
-    //                     'user_id' => $user->id,
-    //                     'mois_comptable_id' => $data['mois_comptable_id'],
-    //                     'parent_id' => $categorie->id,
-    //                     'nom' => $vData['nom'],
-    //                     'budget_prevu' => $vData['budget_prevu'] ?? null,
-    //                     'calcule' => $vData['calcule'] ?? false,
-    //                     'niveau' => 2,
-    //                     'nature' => $data['nature'], // hérite de la nature du parent
-    //                 ]);
+                // 3️⃣ Création des sous-catégories (ex-variables)
+                foreach ($data['variables'] ?? [] as $vData) {
+                    $variable = Categorie::create([
+                        'user_id' => $user->id,
+                        'mois_comptable_id' => $data['mois_comptable_id'],
+                        'parent_id' => $categorie->id,
+                        'nom' => $vData['nom'],
+                        'budget_prevu' => $vData['budget_prevu'] ?? null,
+                        'calcule' => $vData['calcule'] ?? false,
+                        'niveau' => 2,
+                        'nature' => $data['nature'], // hérite de la nature du parent
+                    ]);
 
-    //                 if (($vData['calcule'] ?? false) && isset($vData['regle']['expression'])) {
-    //                     $variable->regleCalcul()->create([
-    //                         'user_id' => $user->id,
-    //                         'expression' => $vData['regle']['expression'],
-    //                     ]);
-    //                 }
+                    if (($vData['calcule'] ?? false) && isset($vData['regle']['expression'])) {
+                        $variable->regleCalcul()->create([
+                            'user_id' => $user->id,
+                            'expression' => $vData['regle']['expression'],
+                        ]);
+                    }
 
-    //                 // 4️⃣ Sous-variables → niveau 3
-    //                 if ($vData['type'] === 'sous-tableau') {
-    //                     foreach ($vData['sous_variables'] ?? [] as $svData) {
-    //                         $sousVar = Categorie::create([
-    //                             'user_id' => $user->id,
-    //                             'mois_comptable_id' => $data['mois_comptable_id'],
-    //                             'parent_id' => $variable->id,
-    //                             'nom' => $svData['nom'],
-    //                             'budget_prevu' => $svData['budget_prevu'] ?? null,
-    //                             // 'calcule' => $svData['calcule'] ?? false,
-    //                             'calcule' => false,
-    //                             'niveau' => 3,
-    //                             'nature' => $data['nature'],
-    //                         ]);
+                    // 4️⃣ Sous-variables → niveau 3
+                    if ($vData['type'] === 'sous-tableau') {
+                        foreach ($vData['sous_variables'] ?? [] as $svData) {
+                            $sousVar = Categorie::create([
+                                'user_id' => $user->id,
+                                'mois_comptable_id' => $data['mois_comptable_id'],
+                                'parent_id' => $variable->id,
+                                'nom' => $svData['nom'],
+                                'budget_prevu' => $svData['budget_prevu'] ?? null,
+                                // 'calcule' => $svData['calcule'] ?? false,
+                                'calcule' => false,
+                                'niveau' => 3,
+                                'nature' => $data['nature'],
+                            ]);
 
-    //                         // if (($svData['calcule'] ?? false) && isset($svData['regle']['expression'])) {
-    //                         //     $sousVar->regleCalcul()->create([
-    //                         //         'user_id' => $user->id,
-    //                         //         'expression' => $svData['regle']['expression'],
-    //                         //     ]);
-    //                         // }
-    //                     }
-    //                 }
-    //             }
+                            // if (($svData['calcule'] ?? false) && isset($svData['regle']['expression'])) {
+                            //     $sousVar->regleCalcul()->create([
+                            //         'user_id' => $user->id,
+                            //         'expression' => $svData['regle']['expression'],
+                            //     ]);
+                            // }
+                        }
+                    }
+                }
 
-    //             return $categorie;
-    //         });
+                return $categorie;
+            });
 
-    //         // Charger les enfants pour le retour JSON
-    //         // $categorie->load(['children.children', 'regleCalcul']);
+            // Charger les enfants pour le retour JSON
+            // $categorie->load(['children.children', 'regleCalcul']);
 
-    //         return response()->json([
-    //             'message' => 'Catégorie principale créée avec succès 🎉',
-    //             'data' => new CategorieResource($categorie)
-    //         ], 201);
+            return response()->json([
+                'message' => 'Catégorie principale créée avec succès 🎉',
+                'data' => new CategorieResource($categorie)
+            ], 201);
 
-    //     } catch (\Throwable $e) {
-    //         return response()->json([
-    //             'message' => 'Impossible de créer la catégorie principale',
-    //             'error' => $e->getMessage()
-    //         ], 422);
-    //     }
-    // }
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Impossible de créer la catégorie principale',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
 
 
     // public function show($id)
