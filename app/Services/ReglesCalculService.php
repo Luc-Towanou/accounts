@@ -1,6 +1,7 @@
 <?php 
 namespace App\Services;
 
+use App\Models\Categorie;
 use App\Models\RegleCalcul;
 use App\Models\SousVariable;
 use App\Models\Variable;
@@ -9,40 +10,182 @@ use Exception;
 
 class ReglesCalculService
 {
+    // /**
+    //  * Évalue une expression contenant NomSousVariable.ID
+    //  */
+    // public function evaluer(string $expression): float
+    // {
+    //     $userId = Auth::id();
+    //     $expression = ltrim($expression, '=');
+
+    //     // Remplacer chaque NomSousVariable.ID par sa valeur
+    //     $expression = preg_replace_callback(
+    //         '/([a-zA-Z_][\w]*)\.(\d+)/',
+    //         function ($matches) use ($userId) {
+    //             $nom = $matches[1];
+    //             $id  = (int) $matches[2];
+
+    //             $sousVariable = SousVariable::where('id', $id)
+    //                 ->where('user_id', $userId)
+    //                 ->first();
+
+    //             if (!$sousVariable) {
+    //                 throw new Exception("La sous-variable '{$nom}.{$id}' est introuvable ou ne vous appartient pas.");
+    //             }
+
+    //             // Vérifie cohérence du nom (optionnel mais sécurisant)
+    //             if ($sousVariable->nom !== $nom) {
+    //                 throw new Exception("Le nom '{$nom}' ne correspond pas à la sous-variable #{$id}.");
+    //             }
+
+    //             return $sousVariable->depense_reelle ?? 0;
+    //         },
+    //         $expression
+    //     );
+
+    //     // Sécurité : seuls chiffres, opérateurs, points et espaces
+    //     if (!preg_match('#^[0-9+\-*/.() ]+$#', $expression)) {
+    //         throw new Exception("Expression invalide ou non sécurisée : {$expression}");
+    //     }
+
+    //     return floatval(eval("return {$expression};"));
+    // }
+
+
+    // /**
+    //  * Valide une expression avant enregistrement
+    //  * + vérifie que chaque sous-variable utilisée n'est pas déjà dans une autre règle
+    //  */
+    // public function validerExpression(string $expression): void
+    // {
+    //     $userId = Auth::id();
+
+    //     preg_match_all('/([a-zA-Z_][\w]*)\.(\d+)/', $expression, $matches, PREG_SET_ORDER);
+
+    //     $idsUtilises = [];
+
+    //     foreach ($matches as $match) {
+    //         $nom = $match[1];
+    //         $id  = (int) $match[2];
+
+    //         if (in_array($id, $idsUtilises)) {
+    //             continue; // éviter doublons
+    //         }
+    //         $idsUtilises[] = $id;
+
+    //         $sousVariable = SousVariable::where('id', $id)
+    //             ->where('user_id', $userId)
+    //             ->first();
+
+    //         if (!$sousVariable) {
+    //             throw new Exception("La sous-variable '{$nom}.{$id}' est introuvable ou ne vous appartient pas.");
+    //         }
+
+    //         if ($sousVariable->nom !== $nom) {
+    //             throw new Exception("Le nom '{$nom}' ne correspond pas à la sous-variable #{$id}.");
+    //         }
+
+    //         // 🔍 Vérifie si cette sous-variable est déjà utilisée dans une autre règle
+    //         $variableUtilisatrice = $this->sousVariableRegleCalcul($sousVariable);
+    //         if ($variableUtilisatrice !== null) {
+    //             throw new Exception("La sous-variable '{$nom}.{$id}' est déjà utilisée dans la règle de calcul de la variable #{$variableUtilisatrice}.");
+    //         }
+    //     }
+    // }
+
+    
+
+    // /**
+    //  * Valide une expression avant enregistrement
+    //  */
+
+    // /**
+    //  * Analyse une règle de calcul : retourne la cible et toutes les sous-variables utilisées
+    //  */
+    // public function analyser(RegleCalcul $regle): array
+    // {
+    //     preg_match_all('/([a-zA-Z_][\w]*)\.(\d+)/', $regle->expression, $matches, PREG_SET_ORDER);
+
+    //     $ids = [];
+    //     foreach ($matches as $match) {
+    //         $ids[] = (int) $match[2];
+    //     }
+
+    //     $ids = array_unique($ids);
+
+    //     return [
+    //         'variable_cible'           => $regle->variable_id,
+    //         'sous_variables_utilisées' => $ids
+    //     ];
+    // }
+
+
+    // /**
+    //  * Vérifie si une variable est déjà utilisée dans une autre règle
+    //  */
+    
+
+    // /**
+    //  * Vérifie si une sous-variable est déjà utilisée dans une autre règle
+    //  */
+    // public function sousVariableRegleCalcul(SousVariable $sousVariable): ?int
+    // {
+    //     $userId = $sousVariable->user_id;
+    //     $id = $sousVariable->id;
+
+    //     $regles = RegleCalcul::whereHas('variable', function ($q) use ($userId) {
+    //             $q->where('user_id', $userId);
+    //         })->get();
+
+    //     foreach ($regles as $regle) {
+    //         if (preg_match("/\b{$id}\b/", $regle->expression)) {
+    //             return $regle->variable_id;
+    //         }
+    //     }
+
+    //     return null;
+    // }
+
+    // public function getDependances(string $expression): array
+    // {
+    //     preg_match_all('/[a-zA-Z_][\w]*\.(\d+)/', $expression, $matches);
+    //     $ids = array_map('intval', $matches[1] ?? []);
+    //     return array_unique($ids);
+    // }
+
     /**
-     * Évalue une expression contenant NomSousVariable.ID
+     * 🧮 Évalue une expression contenant NomCategorie.ID
      */
     public function evaluer(string $expression): float
     {
         $userId = Auth::id();
         $expression = ltrim($expression, '=');
 
-        // Remplacer chaque NomSousVariable.ID par sa valeur
+        // Remplace chaque NomCategorie.ID par la dépense réelle correspondante
         $expression = preg_replace_callback(
             '/([a-zA-Z_][\w]*)\.(\d+)/',
             function ($matches) use ($userId) {
                 $nom = $matches[1];
                 $id  = (int) $matches[2];
 
-                $sousVariable = SousVariable::where('id', $id)
+                $categorie = Categorie::where('id', $id)
                     ->where('user_id', $userId)
                     ->first();
 
-                if (!$sousVariable) {
-                    throw new Exception("La sous-variable '{$nom}.{$id}' est introuvable ou ne vous appartient pas.");
+                if (!$categorie) {
+                    throw new Exception("La catégorie '{$nom}.{$id}' est introuvable ou ne vous appartient pas.");
                 }
 
-                // Vérifie cohérence du nom (optionnel mais sécurisant)
-                if ($sousVariable->nom !== $nom) {
-                    throw new Exception("Le nom '{$nom}' ne correspond pas à la sous-variable #{$id}.");
+                if ($categorie->nom !== $nom) {
+                    throw new Exception("Le nom '{$nom}' ne correspond pas à la catégorie #{$id}.");
                 }
 
-                return $sousVariable->depense_reelle ?? 0;
+                return $categorie->depense_reelle ?? 0;
             },
             $expression
         );
 
-        // Sécurité : seuls chiffres, opérateurs, points et espaces
+        // Sécurité : uniquement chiffres, opérateurs, points et espaces
         if (!preg_match('#^[0-9+\-*/.() ]+$#', $expression)) {
             throw new Exception("Expression invalide ou non sécurisée : {$expression}");
         }
@@ -52,8 +195,9 @@ class ReglesCalculService
 
 
     /**
-     * Valide une expression avant enregistrement
-     * + vérifie que chaque sous-variable utilisée n'est pas déjà dans une autre règle
+     * ✅ Valide une expression avant enregistrement
+     * Vérifie que chaque catégorie utilisée existe, appartient à l'utilisateur
+     * et n'est pas déjà utilisée dans une autre règle.
      */
     public function validerExpression(string $expression): void
     {
@@ -70,81 +214,71 @@ class ReglesCalculService
             if (in_array($id, $idsUtilises)) {
                 continue; // éviter doublons
             }
+
             $idsUtilises[] = $id;
 
-            $sousVariable = SousVariable::where('id', $id)
+            $categorie = Categorie::where('id', $id)
                 ->where('user_id', $userId)
                 ->first();
 
-            if (!$sousVariable) {
-                throw new Exception("La sous-variable '{$nom}.{$id}' est introuvable ou ne vous appartient pas.");
+            if (!$categorie) {
+                throw new Exception("La catégorie '{$nom}.{$id}' est introuvable ou ne vous appartient pas.");
             }
 
-            if ($sousVariable->nom !== $nom) {
-                throw new Exception("Le nom '{$nom}' ne correspond pas à la sous-variable #{$id}.");
+            if ($categorie->nom !== $nom) {
+                throw new Exception("Le nom '{$nom}' ne correspond pas à la catégorie #{$id}.");
             }
 
-            // 🔍 Vérifie si cette sous-variable est déjà utilisée dans une autre règle
-            $variableUtilisatrice = $this->sousVariableRegleCalcul($sousVariable);
-            if ($variableUtilisatrice !== null) {
-                throw new Exception("La sous-variable '{$nom}.{$id}' est déjà utilisée dans la règle de calcul de la variable #{$variableUtilisatrice}.");
+            // Vérifie si cette catégorie est déjà utilisée dans une autre règle
+            $utilisatrice = $this->categorieRegleCalcul($categorie);
+            if ($utilisatrice !== null) {
+                throw new Exception("La catégorie '{$nom}.{$id}' est déjà utilisée dans la règle de calcul de la catégorie #{$utilisatrice}.");
             }
         }
     }
 
-    
 
     /**
-     * Valide une expression avant enregistrement
-     */
-
-    /**
-     * Analyse une règle de calcul : retourne la cible et toutes les sous-variables utilisées
+     * 🧩 Analyse une règle : retourne la catégorie cible et les dépendances
      */
     public function analyser(RegleCalcul $regle): array
     {
         preg_match_all('/([a-zA-Z_][\w]*)\.(\d+)/', $regle->expression, $matches, PREG_SET_ORDER);
 
-        $ids = [];
-        foreach ($matches as $match) {
-            $ids[] = (int) $match[2];
-        }
-
-        $ids = array_unique($ids);
+        $ids = array_unique(array_map(fn($m) => (int) $m[2], $matches));
 
         return [
-            'variable_cible'           => $regle->variable_id,
-            'sous_variables_utilisées' => $ids
+            'categorie_cible'      => $regle->categorie_id,
+            'categories_utilisées' => $ids,
         ];
     }
 
 
     /**
-     * Vérifie si une variable est déjà utilisée dans une autre règle
+     * 🔍 Vérifie si une catégorie est déjà utilisée dans une autre règle
      */
-    
-
-    /**
-     * Vérifie si une sous-variable est déjà utilisée dans une autre règle
-     */
-    public function sousVariableRegleCalcul(SousVariable $sousVariable): ?int
+    public function categorieRegleCalcul(Categorie $categorie): ?int
     {
-        $userId = $sousVariable->user_id;
-        $id = $sousVariable->id;
+        $userId = $categorie->user_id;
+        $id = $categorie->id;
 
-        $regles = RegleCalcul::whereHas('variable', function ($q) use ($userId) {
-                $q->where('user_id', $userId);
-            })->get();
+        $regles = RegleCalcul::whereHas('categorie', function ($q) use ($userId) {
+            $q->where('user_id', $userId);
+        })->get();
 
         foreach ($regles as $regle) {
             if (preg_match("/\b{$id}\b/", $regle->expression)) {
-                return $regle->variable_id;
+                return $regle->categorie_id;
             }
         }
 
         return null;
     }
 
+
+    /**
+     * 📊 Récupère toutes les dépendances (IDs des catégories utilisées)
+     */
     public function getDependances(string $expression): array
     {
         preg_match_all('/[a-zA-Z_][\w]*\.(\d+)/', $expression, $matches);
