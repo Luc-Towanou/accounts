@@ -32,6 +32,12 @@ class CategorieResource extends JsonResource
             "niveau" => $this->niveau,
             "budget_prevu" => $this->budget_prevu,
             "depense_reelle" => $this->depense_reelle,
+            "type"          => match($this->niveau) {
+                                1 => 'tableau',
+                                2 => 'variable',
+                                3 => 'sous_variable',
+                                default => 'exid_3',
+                            },
             // "gains_reelle" => $this->gains_reelle,
             // "montant_net" => $this->montant_net,
             "calcule" => $this->calcule,
