@@ -146,8 +146,13 @@ class AuthController extends Controller
             'otp_expires_at' => null,
             'modifiable_at' => Carbon::now()->addDay(), // verrouille pendant 24h
         ]);
+        $mail = new ConfirmationInscription($user);
+        $html = $mail->render();
 
-        $user->notify(new ConfirmationInscription());
+        $sendgrid = new MailSendGridService();
+        $status = $sendgrid->send($user->email, 'Votre inscription est finalisée avec succes.', $html);
+
+        // $user->notify(new ConfirmationInscription());
                 // Connexion + génération du token
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -254,7 +259,13 @@ class AuthController extends Controller
         'otp_expires_at' => Carbon::now()->addMinutes(10),
     ]);
     // dd($request);
-    Mail::to($user->email)->send(new OtpMail($otp));
+    // Mail::to($user->email)->send(new OtpMail($otp));
+    $mail = new otpMail($otp);
+    $html = $mail->render();
+
+    $sendgrid = new MailSendGridService();
+    $status = $sendgrid->send($user->email, 'Votre code OTP de confirmation', $html);
+
     // dd($request);
     return response()->json(['message' => 'Un nouveau code OTP a été envoyé.']);
     }
