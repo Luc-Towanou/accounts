@@ -33,7 +33,9 @@ implements MustVerifyEmail
         'otp_expires_at',   
         'email_verified_at', 
         'modifiable_at' ,
+        'created_at'
     ];
+    public $timestamps = true; // doit être activé
 
       // Les statuts disponibles
     public const STATUT_ACTIF = 'actif';
