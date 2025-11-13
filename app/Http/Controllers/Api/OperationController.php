@@ -264,8 +264,8 @@ class OperationController extends Controller
             'nature'            => 'required|in:entree,sortie',
             'description'       => 'nullable|string',
             'date'              => 'nullable|date',
-            'variable_id'       => 'nullable|exists:variables,id',
-            'sous_variable_id'  => 'nullable|exists:sous_variables,id',
+            'variable_id'       => 'nullable|exists:categories,id',
+            'sous_variable_id'  => 'nullable|exists:categories,id',
         ]);
 
         $user = Auth::user();
@@ -297,12 +297,14 @@ class OperationController extends Controller
         if (!empty($validated['sous_variable_id'])) {
             // correspond à une catégorie "feuille" de niveau 3 (ex-sous-variable)
             $categorie = Categorie::where('id', $validated['sous_variable_id'])
-                                    ->where('niveau', 3);
+                                    ->where('niveau', 3)
+                                    ->first();
             $niveauAttendu = 3;
         } elseif (!empty($validated['variable_id'])) {
             // correspond à une catégorie de niveau 2 (ex-variable simple)
             $categorie = Categorie::where('id',$validated['variable_id'])
-                                    ->where('niveau', 2);
+                                    ->where('niveau', 2)
+                                    ->first();
             $niveauAttendu = 2;
         }
 
@@ -328,6 +330,7 @@ class OperationController extends Controller
 
         // 2️⃣ Création transactionnelle
         try {
+             Log::info('categorie: ' . $categorie->id);
             $operation = DB::transaction(function () use ($validated, $user, $categorie) {
                 $operation = Operation::create([
                     'montant'       => $validated['montant'],
@@ -348,7 +351,7 @@ class OperationController extends Controller
             //         $parent = $parent->parent;
             //     }
 
-            //     return $operation;
+                return $operation;
             });
         } catch (\Throwable $e) {
             Log::error("Erreur lors de la création de l'opération : {$e->getMessage()}");
@@ -356,7 +359,7 @@ class OperationController extends Controller
                 'error' => "Une erreur est survenue lors de la création de l'opération."
             ], 500);
         }
-
+        Log::info('Operation: ' . $operation);
         // 3️⃣ Retour au client (même format)
         if (!empty($validated['variable_id'])) {
             return response()->json([
