@@ -132,7 +132,7 @@ class SousVariableController extends Controller
         if ($variable->regleCalcul()->exists()) {
             return response()->json([
                 'message' => 'Cette variable a sa propre règle de calcul, impossible d’ajouter une sous-variable'
-            ], 400);
+            ], 400); 
         }
 
         // Création de la sous-variable (niveau 3)

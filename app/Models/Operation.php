@@ -18,7 +18,8 @@ class Operation extends Model
         'date',
         'statut_objet',
         'sous_variable_id',
-        'nature',];
+        'nature',
+        'categorie_id'];
 
     public function variable()
     {

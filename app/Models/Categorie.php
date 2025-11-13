@@ -57,7 +57,7 @@ class Categorie extends Model
     // 👤 Utilisateur propriétaire
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     // 📆 Mois comptable associé
@@ -69,7 +69,7 @@ class Categorie extends Model
     // 💰 Opérations liées à cette catégorie
     public function operations()
     {
-        return $this->hasMany(Operation::class, 'category_id');
+        return $this->hasMany(Operation::class, 'categorie_id');
     }
 
     // 🧮 Règle de calcul associée
