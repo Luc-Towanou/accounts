@@ -38,9 +38,9 @@ class UserController extends Controller
 
     $request->validate([
         'name' => 'nullable|string|max:255',
-        'email' => 'nullable|email|unique:utilisateurs,email,' . $user->id,
+        // 'email' => 'nullable|email|unique:utilisateurs,email,' . $user->id, 
         'avatar' => 'nullable|image|mimes:jpg,jpeg,png|max:6192',
-        'password' => 'required|string|min:6', // mot de passe actuel
+        // 'password' => 'required|string|min:6', // mot de passe actuel 
         // 'new_password' => 'nullable|string|min:6|confirmed', // nouveau mot de passe
     ]);
 
