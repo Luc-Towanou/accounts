@@ -26,6 +26,7 @@ class UserController extends Controller
         'avatar' => $user->avatar,
         'role' => $user->role,
         'statut_compte' => $user->statut_objet,
+        'created_at' => $user->created_at,
     ]);
     }
     public function update(Request $request)
@@ -48,9 +49,10 @@ class UserController extends Controller
 
     try {
         // Vérification du mot de passe actuel
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Mot de passe actuel incorrect'], 403);
-        }
+        // if ($request->filled('name'))
+        // if (!Hash::check($request->password, $user->password)) {
+        //     return response()->json(['message' => 'Mot de passe actuel incorrect'], 403);
+        // }
 
         // Mise à jour de l'avatar si fourni
         if ($request->hasFile('avatar')) {
