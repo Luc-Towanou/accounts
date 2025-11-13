@@ -14,9 +14,11 @@ class ConfirmationInscription extends Notification
     /**
      * Create a new notification instance.
      */
-    public function __construct()
+    public $user;
+    public function __construct($user)
     {
         //
+        $this->user = $user;
     }
 
     /**
@@ -41,6 +43,11 @@ class ConfirmationInscription extends Notification
                     ->action('Vous pouvez vous connecter ici:', url('http://localhost:8001/api/auth/login'))
                     ->line('Thank you for using our application!')
                     ->salutation('Cordialement, L\'équipe Support');
+    }
+
+    public function render(): string
+    {
+        return "Bonjour,<br><br>Votre inscription est finalisée avec succes.<br><br>'Vous pouvez vous connecter ici: ___'<br><br>";
     }
 
     /**
