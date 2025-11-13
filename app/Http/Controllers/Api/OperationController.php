@@ -256,9 +256,109 @@ class OperationController extends Controller
     //     return response()->json($operation->load('sousVariable'), 201);
     // }
 
+//     public function store(Request $request)
+//     {
+//         // ✅ On garde le même format que le front
+//         $validated = $request->validate([
+//             'montant'           => 'required|numeric|min:0',
+//             'nature'            => 'required|in:entree,sortie',
+//             'description'       => 'nullable|string',
+//             'date'              => 'nullable|date',
+//             'variable_id'       => 'nullable|exists:categories,id',
+//             'sous_variable_id'  => 'nullable|exists:categories,id',
+//         ]);
+
+//         $user = Auth::user();
+
+//         // 1️⃣ Vérifications métiers
+//         if (empty($validated['variable_id']) && empty($validated['sous_variable_id'])) {
+//             return response()->json([
+//                 'error' => "L'opération doit être liée à une variable ou une sous-variable."
+//             ], 422);
+//         }
+
+//         if (! empty($validated['variable_id']) && ! empty($validated['sous_variable_id'])) {
+//             return response()->json([
+//                 'error' => "Une opération ne peut pas appartenir à la fois à une variable et à une sous-variable."
+//             ], 422);
+//         }
+
+//         // 🧭 Détermination de la catégorie cible
+//         $categorie = null;
+//         if (!empty($validated['sous_variable_id'])) {
+//             // correspond à une catégorie "feuille" de niveau 3 (ex-sous-variable)
+//             $categorie = Categorie::where('id', $validated['sous_variable_id'])
+//                                     ->where('niveau', 3)
+//                                     ->first();
+//             $niveauAttendu = 3;
+//         } elseif (!empty($validated['variable_id'])) {
+//             // correspond à une catégorie de niveau 2 (ex-variable simple)
+//             $categorie = Categorie::where('id',$validated['variable_id'])
+//                                     ->where('niveau', 2)
+//                                     ->first();
+//             $niveauAttendu = 2;
+//         }
+
+//         if (!$categorie) {
+//             return response()->json([
+//                 'error' => "La variable ou sous-variable spécifiée est introuvable."
+//             ], 404);
+//         }
+
+//         // 🔒 Vérifie que la catégorie appartient bien à l'utilisateur
+//         if ($categorie->user_id !== $user->id) {
+//             return response()->json([
+//                 'error' => "Vous n'êtes pas autorisé à créer une opération sur cette variable."
+//             ], 403);
+//         }
+
+//         // 🚫 Empêche d’ajouter une opération sur une catégorie parent
+//         if ($categorie->enfants()->exists()) {
+//             return response()->json([
+//                 'error' => "Les opérations doivent être enregistrées uniquement sur les sous-variables finales (catégories sans enfants)."
+//             ], 422);
+//         }
+
+//         // 2️⃣ Création transactionnelle
+//         try {
+//              Log::info('categorie: ' . $categorie->id);
+//             $operation = DB::transaction(function () use ($validated, $user, $categorie) {
+//                 $operation = Operation::create([
+//                     'montant'       => $validated['montant'],
+//                     'description'   => $validated['description'] ?? null,
+//                     'date'          => $validated['date'] ?? now(),
+//                     'nature'        => $validated['nature'],
+//                     'categorie_id'  => $categorie->id,
+//                     'user_id'       => $user->id,
+//                 ]);
+
+                
+
+//                 return $operation;
+//             });
+//         } catch (\Throwable $e) {
+//             Log::error("Erreur lors de la création de l'opération : {$e->getMessage()}");
+//             return response()->json([
+//                 'error' => "Une erreur est survenue lors de la création de l'opération."
+//             ], 500);
+//         }
+//         Log::info('Operation: ' . $operation);
+//         // 3️⃣ Retour au client (même format)
+//         if (!empty($validated['variable_id'])) {
+//             return response()->json([
+//                 'message' => "Opération ajoutée avec succès à la variable.",
+//                 'operation' => $operation->load('categorie'),
+//             ], 201);
+//         }
+
+//         return response()->json([
+//             'message' => "Opération ajoutée avec succès à la sous-variable.",
+//             'operation' => $operation->load('categorie'),
+//         ], 201);
+// }
+
     public function store(Request $request)
     {
-        // ✅ On garde le même format que le front
         $validated = $request->validate([
             'montant'           => 'required|numeric|min:0',
             'nature'            => 'required|in:entree,sortie',
@@ -270,109 +370,127 @@ class OperationController extends Controller
 
         $user = Auth::user();
 
-        // 1️⃣ Vérifications métiers
+        // --- Vérifications métiers de base ---
         if (empty($validated['variable_id']) && empty($validated['sous_variable_id'])) {
-            return response()->json([
-                'error' => "L'opération doit être liée à une variable ou une sous-variable."
-            ], 422);
+            return response()->json(['error' => "L'opération doit être liée à une variable ou une sous-variable."], 422);
         }
 
-        if (! empty($validated['variable_id']) && ! empty($validated['sous_variable_id'])) {
-            return response()->json([
-                'error' => "Une opération ne peut pas appartenir à la fois à une variable et à une sous-variable."
-            ], 422);
+        if (!empty($validated['variable_id']) && !empty($validated['sous_variable_id'])) {
+            return response()->json(['error' => "Une opération ne peut pas appartenir à la fois à une variable et une sous-variable."], 422);
         }
 
-        // 🧭 Détermination de la catégorie cible
-        $categorie = null;
-        // if (!empty($validated['sous_variable_id'])) {
-        //     // correspond à une catégorie "feuille" de niveau 3 (ex-sous-variable)
-        //     $categorie = Categorie::find($validated['sous_variable_id']);
-        //     $niveauAttendu = 3;
-        // } elseif (!empty($validated['variable_id'])) {
-        //     // correspond à une catégorie de niveau 2 (ex-variable simple)
-        //     $categorie = Categorie::find($validated['variable_id']);
-        //     $niveauAttendu = 2;
-        // }
-        if (!empty($validated['sous_variable_id'])) {
-            // correspond à une catégorie "feuille" de niveau 3 (ex-sous-variable)
-            $categorie = Categorie::where('id', $validated['sous_variable_id'])
-                                    ->where('niveau', 3)
-                                    ->first();
-            $niveauAttendu = 3;
-        } elseif (!empty($validated['variable_id'])) {
-            // correspond à une catégorie de niveau 2 (ex-variable simple)
-            $categorie = Categorie::where('id',$validated['variable_id'])
-                                    ->where('niveau', 2)
-                                    ->first();
-            $niveauAttendu = 2;
-        }
+        // --- Détermination de la catégorie ciblée ---
+        $categorieId = $validated['sous_variable_id'] ?? $validated['variable_id'];
+        $categorie = Categorie::find($categorieId);
 
         if (!$categorie) {
-            return response()->json([
-                'error' => "La variable ou sous-variable spécifiée est introuvable."
-            ], 404);
+            return response()->json(['error' => "Catégorie introuvable."], 404);
         }
 
-        // 🔒 Vérifie que la catégorie appartient bien à l'utilisateur
-        if ($categorie->user_id !== $user->id) {
-            return response()->json([
-                'error' => "Vous n'êtes pas autorisé à créer une opération sur cette variable."
-            ], 403);
+        // Niveau attendu (pour cohérence)
+        $niveauAttendu =  !empty($validated['sous_variable_id'] ?? null) ? 3 : 2; //validated['sous_variable_id'] ? 3 : 2;
+
+        // --- Cas 1 : la catégorie appartient déjà à l'utilisateur ---
+        if ($categorie->user_id === $user->id) {
+
+            // Vérifie que c'est bien une feuille
+            if ($categorie->enfants()->exists()) {
+                return response()->json([
+                    'error' => "Les opérations doivent être enregistrées uniquement sur les sous-catégories finales."
+                ], 422);
+            }
+
+            $cibleCategorie = $categorie;
         }
 
-        // 🚫 Empêche d’ajouter une opération sur une catégorie parent
-        if ($categorie->enfants()->exists()) {
-            return response()->json([
-                'error' => "Les opérations doivent être enregistrées uniquement sur les sous-variables finales (catégories sans enfants)."
-            ], 422);
+        // --- Cas 2 : catégorie template à dupliquer ---
+        else {
+            if (!$categorie->is_template) {
+                return response()->json(['error' => "Vous n'êtes pas autorisé à utiliser cette catégorie."], 403);
+            }
+
+            // Vérifie que la catégorie template est bien une feuille
+            if ($categorie->enfants()->exists()) {
+                return response()->json([
+                    'error' => "Impossible d'ajouter une opération sur une catégorie template parent."
+                ], 422);
+            }
+
+            // Récupère son mois comptable actif
+            $moisComptable = $user->moisComptables()->latest()->first();
+            if (!$moisComptable) {
+                return response()->json(['error' => "Aucun mois comptable actif trouvé."], 404);
+            }
+
+            try {
+                DB::beginTransaction();
+
+                // --- Étape 1 : trouver la racine de la hiérarchie template ---
+                $racineTemplate = $categorie;
+                while ($racineTemplate->parent) {
+                    $racineTemplate = $racineTemplate->parent;
+                }
+
+                // --- Étape 2 : dupliquer toute la hiérarchie pour l'utilisateur ---
+                $nouvelleRacine = $racineTemplate->dupliquer($user->id, $moisComptable->id, null);
+
+                // --- Étape 3 : retrouver la correspondance exacte du nœud cible ---
+                $cibleCategorie = self::trouverCorrespondanceTemplate($categorie, $racineTemplate, $nouvelleRacine);
+
+                DB::commit();
+            } catch (\Throwable $e) {
+                DB::rollBack();
+                Log::error("Erreur duplication template: " . $e->getMessage());
+                return response()->json(['error' => "Erreur lors de la duplication du template."], 500);
+            }
         }
 
-        // 2️⃣ Création transactionnelle
+        // --- Création de l’opération ---
         try {
-             Log::info('categorie: ' . $categorie->id);
-            $operation = DB::transaction(function () use ($validated, $user, $categorie) {
-                $operation = Operation::create([
+            $operation = DB::transaction(function () use ($validated, $user, $cibleCategorie) {
+                return Operation::create([
                     'montant'       => $validated['montant'],
                     'description'   => $validated['description'] ?? null,
                     'date'          => $validated['date'] ?? now(),
                     'nature'        => $validated['nature'],
-                    'categorie_id'  => $categorie->id,
+                    'categorie_id'  => $cibleCategorie->id,
                     'user_id'       => $user->id,
                 ]);
-
-                // 💰 Mise à jour des montants réels
-                // $categorie->increment('depense_reelle', $validated['montant']);
-
-                // 🔁 Propagation aux parents
-            //     $parent = $categorie->parent;
-            //     while ($parent) {
-            //         $parent->increment('depense_reelle', $validated['montant']);
-            //         $parent = $parent->parent;
-            //     }
-
-                return $operation;
             });
         } catch (\Throwable $e) {
-            Log::error("Erreur lors de la création de l'opération : {$e->getMessage()}");
-            return response()->json([
-                'error' => "Une erreur est survenue lors de la création de l'opération."
-            ], 500);
-        }
-        Log::info('Operation: ' . $operation);
-        // 3️⃣ Retour au client (même format)
-        if (!empty($validated['variable_id'])) {
-            return response()->json([
-                'message' => "Opération ajoutée avec succès à la variable.",
-                'operation' => $operation->load('categorie'),
-            ], 201);
+            Log::error("Erreur création opération: " . $e->getMessage());
+            return response()->json(['error' => "Erreur lors de la création de l'opération."], 500);
         }
 
         return response()->json([
-            'message' => "Opération ajoutée avec succès à la sous-variable.",
+            'message' => "Opération ajoutée avec succès.",
             'operation' => $operation->load('categorie'),
         ], 201);
-}
+    }
+
+    /**
+     * 🔁 Trouve la catégorie correspondante après duplication d’un template.
+     * Permet de retrouver le bon "feuille" correspondant au modèle original.
+     */
+    private static function trouverCorrespondanceTemplate($original, $racineTemplate, $nouvelleRacine)
+    {
+        // On remonte la hiérarchie du template original jusqu’à la racine
+        $chemin = collect();
+        $courant = $original;
+        while ($courant) {
+            $chemin->prepend($courant->nom);
+            $courant = $courant->parent;
+        }
+
+        // On redescend le même chemin sur la nouvelle hiérarchie
+        $courant = $nouvelleRacine;
+        foreach ($chemin as $nom) {
+            $courant = $courant->enfants->firstWhere('nom', $nom) ?? $courant;
+        }
+
+        return $courant;
+    }
+
 
 
 
