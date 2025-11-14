@@ -175,13 +175,7 @@ class Categorie extends Model
         'template_id'      => $this->id,
     ]);
 
-    // Dupliquer la règle de calcul si elle existe
-    // if ($this->regleCalcul) {
-    //     $copie->regleCalcul()->create([
-    //         'user_id'    => $userId,
-    //         'expression' => $this->regleCalcul->expression,
-    //     ]);
-    // }
+    
 
     // Si on veut descendre plus bas
     if ($profondeur !== 0) {
