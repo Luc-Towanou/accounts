@@ -655,14 +655,14 @@ class VariableController extends Controller
             }
 
             // Vérification règle de calcul
-            $regleCalcul = new RegleCalculService();
-            $parente = $regleCalcul->variableRegleCalcul($variable);
-            if ($parente) {
-                DB::rollBack();
-                return response()->json([
-                    'message' => "Cette variable est déjà utilisée dans la règle de calcul de : " . $parente->nom
-                ], 400);
-            }
+            // $regleCalcul = new RegleCalculService();
+            // $parente = $regleCalcul->variableRegleCalcul($variable);
+            // if ($parente) {
+            //     DB::rollBack();
+            //     return response()->json([
+            //         'message' => "Cette variable est déjà utilisée dans la règle de calcul de : " . $parente->nom
+            //     ], 400);
+            // }
 
             // Suppression
             $variable->delete();
