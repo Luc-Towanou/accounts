@@ -404,19 +404,60 @@ class OperationController extends Controller
         }
 
         // --- Cas 2 : catégorie template à dupliquer ---
+        // else {
+        //     if (!$categorie->is_template) {
+        //         return response()->json(['error' => "Vous n'êtes pas autorisé à utiliser cette catégorie."], 403);
+        //     }
+
+        //     // Vérifie que la catégorie template est bien une feuille
+        //     if ($categorie->enfants()->exists()) {
+        //         return response()->json([
+        //             'error' => "Impossible d'ajouter une opération sur une catégorie template parent."
+        //         ], 422);
+        //     }
+
+        //     // Récupère son mois comptable actif
+        //     $moisComptable = $user->moisComptables()->latest()->first();
+        //     if (!$moisComptable) {
+        //         return response()->json(['error' => "Aucun mois comptable actif trouvé."], 404);
+        //     }
+
+        //     try {
+        //         DB::beginTransaction();
+
+        //         // --- Étape 1 : trouver la racine de la hiérarchie template ---
+        //         $racineTemplate = $categorie;
+        //         while ($racineTemplate->parent) {
+        //             $racineTemplate = $racineTemplate->parent;
+        //         }
+
+        //         // --- Étape 2 : dupliquer toute la hiérarchie pour l'utilisateur ---
+        //         $nouvelleRacine = $racineTemplate->dupliquer($user->id, $moisComptable->id, null);
+
+        //         // --- Étape 3 : retrouver la correspondance exacte du nœud cible ---
+        //         $cibleCategorie = self::trouverCorrespondanceTemplate($categorie, $racineTemplate, $nouvelleRacine);
+
+        //         DB::commit();
+        //     } catch (\Throwable $e) {
+        //         DB::rollBack();
+        //         Log::error("Erreur duplication template: " . $e->getMessage());
+        //         return response()->json(['error' => "Erreur lors de la duplication du template."], 500);
+        //     }
+        // }
+        // --- Cas 2 : catégorie template à dupliquer ---
         else {
             if (!$categorie->is_template) {
                 return response()->json(['error' => "Vous n'êtes pas autorisé à utiliser cette catégorie."], 403);
             }
 
-            // Vérifie que la catégorie template est bien une feuille
+            // Vérifier que la catégorie template est une feuille
             if ($categorie->enfants()->exists()) {
                 return response()->json([
                     'error' => "Impossible d'ajouter une opération sur une catégorie template parent."
                 ], 422);
             }
 
-            // Récupère son mois comptable actif
+            // Récupérer le mois comptable actif
             $moisComptable = $user->moisComptables()->latest()->first();
             if (!$moisComptable) {
                 return response()->json(['error' => "Aucun mois comptable actif trouvé."], 404);
@@ -425,17 +466,38 @@ class OperationController extends Controller
             try {
                 DB::beginTransaction();
 
-                // --- Étape 1 : trouver la racine de la hiérarchie template ---
+                // --- 1️⃣ Trouver la racine template ---
                 $racineTemplate = $categorie;
                 while ($racineTemplate->parent) {
                     $racineTemplate = $racineTemplate->parent;
                 }
 
-                // --- Étape 2 : dupliquer toute la hiérarchie pour l'utilisateur ---
-                $nouvelleRacine = $racineTemplate->dupliquer($user->id, $moisComptable->id, null);
+                // --- 2️⃣ Vérifier si la hiérarchie a déjà été copiée pour ce mois ---
+                $racineExistante = Categorie::where('user_id', $user->id)
+                    ->where('mois_comptable_id', $moisComptable->id)
+                    ->where('template_id', $racineTemplate->id)
+                    ->first();
 
-                // --- Étape 3 : retrouver la correspondance exacte du nœud cible ---
-                $cibleCategorie = self::trouverCorrespondanceTemplate($categorie, $racineTemplate, $nouvelleRacine);
+                // --- 3️⃣ Si non, dupliquer toute la hiérarchie ---
+                if (!$racineExistante) {
+                    $racineExistante = $racineTemplate->dupliquer(
+                        $user->id,
+                        $moisComptable->id,
+                        parentId: null,
+                        profondeur: null // null = duplique toute la hiérarchie
+                    );
+                }
+
+                // --- 4️⃣ Trouver maintenant la copie équivalente à la catégorie cible ---
+                $cibleCategorie = Categorie::where('user_id', $user->id)
+                    ->where('mois_comptable_id', $moisComptable->id)
+                    ->where('template_id', $categorie->id)
+                    ->first();
+
+                // (Normalement elle existe déjà après duplication, mais on sécurise)
+                if (!$cibleCategorie) {
+                    return response()->json(['error' => "Erreur lors de la duplication de la hiérarchie."], 500);
+                }
 
                 DB::commit();
             } catch (\Throwable $e) {
@@ -444,6 +506,7 @@ class OperationController extends Controller
                 return response()->json(['error' => "Erreur lors de la duplication du template."], 500);
             }
         }
+
 
         // --- Création de l’opération ---
         try {
@@ -708,6 +771,7 @@ class OperationController extends Controller
             return response()->json('Non autorisé', 401);
         }
 
+        Log::info('Operation: ' . $operation . "\nInit try deleting");
         try {
             DB::transaction(function () use ($operation) {
                 $montant = $operation->montant;

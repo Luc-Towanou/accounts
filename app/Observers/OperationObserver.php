@@ -123,13 +123,21 @@ class OperationObserver
 
         $mois->depense_reelle = $mois->categories()
             ->where('nature', 'sortie')
+            ->where('niveau', 1)
+            ->where('parent_id', null)
             ->sum('depense_reelle');
 
         $mois->gains_reelle = $mois->categories()
             ->where('nature', 'entree')
+            ->where('niveau', 1)
+            ->where('parent_id', null)
             ->sum('depense_reelle');
 
+        Log::info('Depenses réelle mois: ' . $mois->depense_reelle . "\n" . 'Gains totals mois: ' . $mois->gains_reelle . "\n");
+
         $mois->montant_net = $mois->gains_reelle - $mois->depense_reelle;
+
+        Log::info('Montant net du mois: ' . $mois->montant_net . "\n");
 
         $mois->save();
     }
