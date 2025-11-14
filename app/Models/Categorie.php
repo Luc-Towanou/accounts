@@ -35,6 +35,7 @@ class Categorie extends Model
         'visibilite',
         'date_debut',
         'date_fin',
+        'template_id',
     ];
 
     /**
@@ -125,21 +126,94 @@ class Categorie extends Model
     /**
      * 🔁 Duplication récursive d’une catégorie (pour dupliquer un template)
      */
-    public function dupliquer($userId, $moisComptableId, $parentId = null)
-    {
-        $nouvelleCategorie = $this->replicate();
-        $nouvelleCategorie->user_id = $userId;
-        $nouvelleCategorie->mois_comptable_id = $moisComptableId;
-        $nouvelleCategorie->parent_id = $parentId;
-        $nouvelleCategorie->is_template = false;
-        $nouvelleCategorie->visibilite = 'prive';
-        $nouvelleCategorie->save();
+    // public function dupliquer($userId, $moisComptableId, $parentId = null)
+    // {
+    //     $nouvelleCategorie = $this->replicate();
+    //     $nouvelleCategorie->user_id = $userId;
+    //     $nouvelleCategorie->mois_comptable_id = $moisComptableId;
+    //     $nouvelleCategorie->parent_id = $parentId;
+    //     $nouvelleCategorie->is_template = false;
+    //     $nouvelleCategorie->visibilite = 'prive';
+    //     $nouvelleCategorie->save();
 
+    //     foreach ($this->enfants as $enfant) {
+    //         $enfant->dupliquer($userId, $moisComptableId, $nouvelleCategorie->id);
+    //     }
+
+    //     return $nouvelleCategorie;
+    // }
+
+
+    //     Ce que ça permet
+    // Dupliquer uniquement le parent :
+
+    // php
+    // $copie = $categorie->dupliquer($user->id, $mois->id, null, 0);
+    // Dupliquer le parent + enfants directs seulement :
+
+    // php
+    // $copie = $categorie->dupliquer($user->id, $mois->id, null, 1);
+    // Dupliquer uniquement certaines branches :
+
+    // php
+    // $copie = $categorie->dupliquer($user->id, $mois->id, null, null, [$enfantId1, $enfant
+
+
+    public function dupliquer($userId, $moisComptableId, $parentId = null, $profondeur = null, $filtreIds = [])
+{
+    // Création de la copie
+    $copie = Categorie::create([
+        'user_id'          => $userId,
+        'mois_comptable_id'=> $moisComptableId,
+        'parent_id'        => $parentId,
+        'nom'              => $this->nom,
+        'budget_prevu'     => $this->budget_prevu,
+        'calcule'          => $this->calcule,
+        'niveau'           => $this->niveau,
+        'nature'           => $this->nature,
+        'is_template'      => false,
+        'template_id'      => $this->id,
+    ]);
+
+    
+
+    // Si on veut descendre plus bas
+    if ($profondeur !== 0) {
         foreach ($this->enfants as $enfant) {
-            $enfant->dupliquer($userId, $moisComptableId, $nouvelleCategorie->id);
-        }
+            // Filtrage : si une liste est donnée, on ne duplique que les enfants choisis
+            if (!empty($filtreIds) && !in_array($enfant->id, $filtreIds)) {
+                continue;
+            }
 
-        return $nouvelleCategorie;
+            // Appel récursif avec profondeur décrémentée
+            $enfant->dupliquer(
+                $userId,
+                $moisComptableId,
+                $copie->id,
+                is_null($profondeur) ? null : $profondeur - 1,
+                $filtreIds
+            );
+        }
+    }
+
+    return $copie;
+}
+
+
+    /**
+     * La catégorie modèle d’origine (si cette catégorie est une copie).
+     */
+    public function template()
+    {
+        return $this->belongsTo(Categorie::class, 'template_id');
+    }
+
+    /**
+     * Les copies créées à partir de cette catégorie (si elle est un template).
+     */
+    public function copies()
+    {
+        return $this->hasMany(Categorie::class, 'template_id');
     }
 }
 
