@@ -47,7 +47,11 @@ class ConfirmationInscription extends Notification
 
     public function render(): string
     {
-        return "Bonjour,<br><br>Votre inscription est finalisée avec succes.<br><br>'Vous pouvez vous connecter ici: ___'<br><br>";
+        $frontUrl = config('front.front_url'); //cacala omon___
+
+        return "Bonjour,<br><br>
+                Votre inscription est finalisée avec succes.<br><br>
+                Vous pouvez vous connecter ici: <a href= '{$frontUrl}' >{$frontUrl}</a><br><br>";
     }
 
     /**
