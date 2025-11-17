@@ -269,7 +269,7 @@ class VariableController extends Controller
         $validated = $request->validate([
             'tableau_id' => 'required|exists:categories,id', // le parent (tableau niveau 1)
             'nom' => 'required|string',
-            'type' => 'required|in:simple,sous-tableau',
+            // 'type' => 'required|in:simple,sous-tableau',
             'budget_prevu' => 'nullable|numeric',
             'calcule' => 'nullable|boolean',
             'regle.expression' => 'nullable|string',
