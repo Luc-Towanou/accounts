@@ -304,15 +304,15 @@ class VariableController extends Controller
             DB::beginTransaction();
 
             // 🔹 Validation AVANT la création
-            if ($validated['type'] === 'sous-tableau') {
+            // if ($validated['type'] === 'sous-tableau') {
                 // foreach ($validated['sous_variables'] ?? [] as $svData) {
                 //     if (($svData['calcule'] ?? false) && isset($svData['regle']['expression'])) {
                 //         $validator->validerExpression($svData['regle']['expression']);
                 //     }
                 // }
-            } elseif (($validated['calcule'] ?? false) && isset($validated['regle']['expression'])) {
-                $validator->validerExpression($validated['regle']['expression']);
-            }
+            // } elseif (($validated['calcule'] ?? false) && isset($validated['regle']['expression'])) {
+                // $validator->validerExpression($validated['regle']['expression']);
+            // }
 
             // 🔹 Création de la variable (niveau 2)
             $variable = Categorie::create([
@@ -340,21 +340,21 @@ class VariableController extends Controller
                         'nature'        => $parentCategorie->nature,
                     ]);
 
-                    if (($svData['calcule'] ?? false) && isset($svData['regle']['expression'])) {
-                        $sousVar->regleCalcul()->create([
-                            'user_id'   => $user->id,
-                            'expression'=> $svData['regle']['expression'],
-                        ]);
-                    }
+                    // if (($svData['calcule'] ?? false) && isset($svData['regle']['expression'])) {
+                    //     $sousVar->regleCalcul()->create([
+                    //         'user_id'   => $user->id,
+                    //         'expression'=> $svData['regle']['expression'],
+                    //     ]);
+                    // }
                 }
             // } 
             // 🔹 Gestion de la règle de calcul
-            if ($variable->calcule) {
-                $variable->regleCalcul()->create([
-                    'user_id'   => $user->id,
-                    'expression'=> $validated['regle']['expression'],
-                ]);
-            }
+            // if ($variable->calcule) {
+            //     $variable->regleCalcul()->create([
+            //         'user_id'   => $user->id,
+            //         'expression'=> $validated['regle']['expression'],
+            //     ]);
+            // }
 
             DB::commit();
 
