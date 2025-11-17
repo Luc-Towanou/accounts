@@ -246,7 +246,7 @@ class TableauController extends Controller
             'mois_comptable_id' => 'required|exists:mois_comptables,id',
             'nom' => 'required|string',
             'budget_prevu' => 'nullable|numeric',
-            'nature' => 'in:entree,sortie',
+            'nature' => 'nullable|in:entree,sortie',
 
             'variables' => 'nullable|array',
             'variables.*.nom' => 'required|string',
