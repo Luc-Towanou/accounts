@@ -26,15 +26,33 @@ class CategorieResource extends JsonResource
             default => null,
         };
          // ---- Calcul du nombre total d'opérations ----
+        // ---- 🔥 Calcul du nombre total d'opérations (version corrigée & complète) ----
         $nombreOperations = match ($this->niveau) {
-            3 => $this->operations()->count(), // sous-variable
 
-            2 => $this->enfants()             // variable
+            // --- Niveau 3 : sous-variable ---
+            3 => $this->operations()->count(),
+
+            // --- Niveau 2 : variable ---
+            2 => 
+                // 1) Opérations directes de la variable
+                $this->operations()->count()
+                +
+                // 2) Opérations des sous-variables
+                $this->enfants()
                     ->withCount('operations')
                     ->get()
                     ->sum('operations_count'),
 
-            1 => $this->enfants()             // tableau
+            // --- Niveau 1 : tableau ---
+            1 => 
+                // 1) Opérations directes des variables (si jamais)
+                $this->enfants()
+                    ->withCount('operations')
+                    ->get()
+                    ->sum('operations_count')
+                +
+                // 2) Opérations des sous-variables
+                $this->enfants()
                     ->with(['enfants' => fn($q) => $q->withCount('operations')])
                     ->get()
                     ->flatMap(fn($variable) => $variable->enfants)
