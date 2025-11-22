@@ -58,7 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('operations/recents', [OperationController::class, 'lastFiftyOperations']);
     Route::get('operations/bymois', [OperationController::class, 'operationsByMonth']);
     Route::get('operations/mois/{moisComptableId}', [OperationController::class, 'operationsByMonthId']);
-    Route::put('/operations/{operationId}', [OperationController::class, 'update']);
+    Route::put('operations/{operationId}', [OperationController::class, 'update']);
     Route::delete('operations/{operationId}', [OperationController::class, 'destroy']);
 
     // variables
