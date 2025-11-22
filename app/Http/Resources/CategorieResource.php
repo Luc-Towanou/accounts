@@ -25,6 +25,23 @@ class CategorieResource extends JsonResource
             2 => 'sous_variables',
             default => null,
         };
+         // ---- Calcul du nombre total d'opérations ----
+        $nombreOperations = match ($this->niveau) {
+            3 => $this->operations()->count(), // sous-variable
+
+            2 => $this->enfants()             // variable
+                    ->withCount('operations')
+                    ->get()
+                    ->sum('operations_count'),
+
+            1 => $this->enfants()             // tableau
+                    ->with(['enfants' => fn($q) => $q->withCount('operations')])
+                    ->get()
+                    ->flatMap(fn($variable) => $variable->enfants)
+                    ->sum('operations_count'),
+
+            default => 0,
+        };
 
         $data = [
             "id" => $this->id,
@@ -38,6 +55,8 @@ class CategorieResource extends JsonResource
                                 3 => 'sous_variable',
                                 default => 'exid_3',
                             },
+             // 🔥 Ce que tu voulais ajouter :
+            "nombre_operations" => $nombreOperations,
             // "gains_reelle" => $this->gains_reelle,
             // "montant_net" => $this->montant_net,
             "calcule" => $this->calcule,

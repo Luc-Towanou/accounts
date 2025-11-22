@@ -798,5 +798,60 @@ class OperationController extends Controller
     }
 
 
+    public function lastFiftyOperations()
+    {
+        $user = Auth::user();
+
+        // Dernier mois comptable de l'utilisateur
+        $moisComptable = $user->moisComptables()->latest()->first();
+        if (!$moisComptable) {
+            return response()->json(['error' => 'Aucun mois comptable trouvé'], 404);
+        }
+
+        // Récupérer les opérations liées aux catégories de ce mois
+        $operations = Operation::where('user_id', $user->id)
+            ->whereHas('categorie', function ($q) use ($moisComptable) {
+                $q->where('mois_comptable_id', $moisComptable->id);
+            })
+            ->latest('date')
+            ->take(50)
+            ->get();
+
+        return response()->json($operations);
+    }
+
+    public function operationsByMonth()
+    {
+        $user = Auth::user();
+
+        $moisComptables = $user->moisComptables()->with(['categories.operations' => function($q) use ($user) {
+            $q->where('user_id', $user->id)->latest('date');
+        }])->get();
+
+        return response()->json($moisComptables);
+    }
+
+    public function operationsByMonthId($moisId)
+    {
+        $user = Auth::user();
+
+        $moisComptable = $user->moisComptables()->findOrFail($moisId);
+
+        $operations = Operation::where('user_id', $user->id)
+            ->whereHas('categorie', function ($q) use ($moisComptable) {
+                $q->where('mois_comptable_id', $moisComptable->id);
+            })
+            ->latest('date')
+            ->get();
+
+        return response()->json($operations);
+    }
+
+
+    
+    
+
+
+
 
 }
