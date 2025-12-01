@@ -41,32 +41,67 @@ class EnsureMoisComptable
     private function ensureMoisComptableAvecHeritage($user)
     {
         // dd( 'Vérification 3 !' . $user);
+        // $annee = now()->year;
+        // $moisNum  = now()->month;
+
+        // if ($moisNum === 1) $mois = 'janvier';
+        // if ($moisNum === 2) $mois = 'février';
+        // if ($moisNum === 3) $mois = 'mars';
+        // if ($moisNum === 4) $mois = 'avril';
+        // if ($moisNum === 5) $mois = 'mai';
+        // if ($moisNum === 6) $mois = 'juin';
+        // if ($moisNum === 7) $mois = 'juillet';
+        // if ($moisNum === 8) $mois = 'aout';
+        // if ($moisNum === 9) $mois = 'septembre';
+        // if ($moisNum === 10) $mois = 'octobre';
+        // if ($moisNum === 11) $mois = 'novembre';
+        // if ($moisNum === 12) $mois = 'décembre';
+
+        // // Vérifier si le mois existe déjà
+        // $moisComptable = MoisComptable::firstOrCreate(
+        //     [
+        //         'user_id' => $user->id,
+        //         'annee'   => $annee,
+        //         'mois'    => $mois,
+        //     ],
+        //     [
+        //         'date_debut'   => now()->startOfMonth()->startOfDay(),
+        //         'date_fin'     => now()->endOfMonth()->endOfDay(),
+        //     ]
+        // );
+
         $annee = now()->year;
         $moisNum  = now()->month;
 
-        if ($moisNum === 1) $mois = 'janvier';
-        if ($moisNum === 2) $mois = 'février';
-        if ($moisNum === 3) $mois = 'mars';
-        if ($moisNum === 4) $mois = 'avril';
-        if ($moisNum === 5) $mois = 'mai';
-        if ($moisNum === 6) $mois = 'juin';
-        if ($moisNum === 7) $mois = 'juillet';
-        if ($moisNum === 8) $mois = 'aout';
-        if ($moisNum === 9) $mois = 'septembre';
-        if ($moisNum === 10) $mois = 'octobre';
-        if ($moisNum === 11) $mois = 'novembre';
-        if ($moisNum === 12) $mois = 'décembre';
+        // Map moisNum → texte
+        $map = [
+            1  => 'janvier',
+            2  => 'février',
+            3  => 'mars',
+            4  => 'avril',
+            5  => 'mai',
+            6  => 'juin',
+            7  => 'juillet',
+            8  => 'aout',
+            9  => 'septembre',
+            10 => 'octobre',
+            11 => 'novembre',
+            12 => 'décembre',
+        ];
+
+        $moisTexte = $map[$moisNum];
 
         // Vérifier si le mois existe déjà
         $moisComptable = MoisComptable::firstOrCreate(
             [
                 'user_id' => $user->id,
                 'annee'   => $annee,
-                'mois'    => $mois,
+                'mois'    => $moisTexte,
+                'mois_num'=> $moisNum, // <-- nouvelle colonne pour comparaison
             ],
             [
-                'date_debut'   => now()->startOfMonth()->startOfDay(),
-                'date_fin'     => now()->endOfMonth()->endOfDay(),
+                'date_debut' => now()->startOfMonth()->startOfDay(),
+                'date_fin'   => now()->endOfMonth()->endOfDay(),
             ]
         );
 
@@ -77,19 +112,34 @@ class EnsureMoisComptable
         //     'exists'           => $moisComptable->exists,
         //     'attributes'       => $moisComptable->getAttributes()
         // ]); 
+        // if ($moisComptable->wasRecentlyCreated) {
+        //     // $dernierMois = MoisComptable::where('id', 20)
+        //     $dernierMois = MoisComptable::where('user_id', $user->id)
+        //         ->where(function ($q) use ($moisComptable) {
+        //             $q->where('annee', '<', $moisComptable->annee)
+        //               ->orWhere(function ($q2) use ($moisComptable) {
+        //                   $q2->where('annee', $moisComptable->annee)
+        //                      ->where('mois', '<', $moisComptable->mois);
+        //               });
+        //         })
+        //         ->orderBy('annee', 'desc')
+        //         ->orderBy('mois', 'desc')
+        //         ->first();
+        
+        // Si c’est un nouveau mois, hériter de la structure précédente
         if ($moisComptable->wasRecentlyCreated) {
-            // $dernierMois = MoisComptable::where('id', 20)
             $dernierMois = MoisComptable::where('user_id', $user->id)
                 ->where(function ($q) use ($moisComptable) {
                     $q->where('annee', '<', $moisComptable->annee)
-                      ->orWhere(function ($q2) use ($moisComptable) {
-                          $q2->where('annee', $moisComptable->annee)
-                             ->where('mois', '<', $moisComptable->mois);
-                      });
+                    ->orWhere(function ($q2) use ($moisComptable) {
+                        $q2->where('annee', $moisComptable->annee)
+                            ->where('mois_num', '<', $moisComptable->mois_num); // comparaison sur entier
+                    });
                 })
                 ->orderBy('annee', 'desc')
-                ->orderBy('mois', 'desc')
-                ->first(); 
+                ->orderBy('mois_num', 'desc')
+                ->first();
+                
             Log::info('Dernier moi: ' . $dernierMois);
             
             Log::info('Grande Categorie: ' . $dernierMois->categories()->whereNull('parent_id')->get() . "\nInit");
