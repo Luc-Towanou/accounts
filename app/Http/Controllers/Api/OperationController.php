@@ -122,6 +122,7 @@ class OperationController extends Controller
     public function indexVariable($categorieId)
     {
         $categorie = Categorie::with('enfants.operations')->findOrFail($categorieId);
+        // $cat = Categorie::findOrFail($categorieId);
         $user = Auth::user();
 
         if ($categorie->user_id !== $user->id) {
@@ -129,11 +130,15 @@ class OperationController extends Controller
         }
 
         $operations = collect();
+        $operations = $categorie->operations;
         if ($categorie->enfants->isNotEmpty()) {
             foreach ($categorie->enfants as $enfant) {
                 $operations = $operations->merge($enfant->operations);
             }
         }
+        Log::info('cat : ' . $categorie);
+        Log::info('cats enfants: ' . $categorie->enfants);
+        Log::info('operation : ' . $operations);
 
         return response()->json([
             'variable' => $categorie->nom,
@@ -164,7 +169,7 @@ class OperationController extends Controller
         }
 
         return response()->json([
-            'message' => 'Voici les opérations de cette variable',
+            'message' => 'Voici les opérations de cette Categorie',
             'operations' => $operations->map(fn($op) => $this->formatOperation($op)),
         ]);
     }
