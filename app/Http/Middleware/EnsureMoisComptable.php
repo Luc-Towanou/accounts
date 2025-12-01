@@ -45,7 +45,7 @@ class EnsureMoisComptable
         $moisNum  = now()->month;
 
         if ($moisNum === 1) $mois = 'janvier';
-        if ($moisNum === 2) $mois = 'fevrier';
+        if ($moisNum === 2) $mois = 'février';
         if ($moisNum === 3) $mois = 'mars';
         if ($moisNum === 4) $mois = 'avril';
         if ($moisNum === 5) $mois = 'mai';
@@ -55,7 +55,7 @@ class EnsureMoisComptable
         if ($moisNum === 9) $mois = 'septembre';
         if ($moisNum === 10) $mois = 'octobre';
         if ($moisNum === 11) $mois = 'novembre';
-        if ($moisNum === 12) $mois = 'decembre';
+        if ($moisNum === 12) $mois = 'décembre';
 
         // Vérifier si le mois existe déjà
         $moisComptable = MoisComptable::firstOrCreate(

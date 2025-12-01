@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 
 // use PDF;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class MoisComptableController extends Controller
 {
@@ -379,6 +380,7 @@ class MoisComptableController extends Controller
                                 ->where('annee', now()->year)
                                 ->where('mois', now()->locale('fr')->monthName)
                                 ->first();
+        Log::info(now()->locale('fr')->monthName);
         if(!$moisActif) return response()->json('Empty', 422) ;
         return response()->json([
             'Mois comptable en cours' => $moisActif->mois,

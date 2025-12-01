@@ -54,8 +54,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('categories', CategorieController::class);
 
     // operations
-    Route::get('operations/variable/{variableId}', [OperationController::class, 'index']);
-    Route::get('operations/recents', [OperationController::class, 'lastFiftyOperations']);
+    // Route::get('operations/index', [OperationController::class, 'index']);
+    Route::get('operations/variable/{categorieId}', [OperationController::class, 'indexVariable']);
+    Route::get('operations/last/50', [OperationController::class, 'lastFiftyOperations']);
     Route::get('operations/bymois', [OperationController::class, 'operationsByMonth']);
     Route::get('operations/mois/{moisComptableId}', [OperationController::class, 'operationsByMonthId']);
     Route::put('operations/{operationId}', [OperationController::class, 'update']);
