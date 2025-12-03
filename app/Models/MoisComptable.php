@@ -21,6 +21,7 @@ class MoisComptable extends Model
         'montant_net',
         'date_debut',
         'date_fin',
+        'mois_num',
     ];
 
     protected $casts = [
